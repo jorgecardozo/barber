@@ -77,8 +77,8 @@ export type Barber = {
  */
 export const BARBERS: Barber[] = [
   { name: "Gavazz", role: "Co-founder & Barbero", specialty: "Fades & diseños", img: "/barbers/br1.jpg" },
-  { name: "Barbero 2", role: "Barbero", specialty: "Clásicos & barba", img: "/barbers/br2.jpg" },
-  { name: "Barbero 3", role: "Barbero", specialty: "Color & platinados", img: "/barbers/br3.jpg" },
+  { name: "Thiago", role: "Barbero", specialty: "Clásicos & barba", img: "/barbers/br2.jpg" },
+  { name: "Lucio", role: "Barbero", specialty: "Color & platinados", img: "/barbers/br3.jpg" },
 ];
 
 export type Fragrance = {
