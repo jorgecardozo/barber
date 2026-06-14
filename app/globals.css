@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+/* ===========================================================
+   FLOW SITE — Design System
+   Barbería & Fragancias · San José Obrero 993
+   Paleta extraída de la identidad de @flow_site_
+   =========================================================== */
+
+@theme {
+  /* --- Colores de marca --- */
+  --color-ink: #07070a;          /* negro profundo (fondo) */
+  --color-ink-2: #0e0e13;        /* negro elevado (cards) */
+  --color-ink-3: #16161d;        /* borde/superficie sutil */
+
+  --color-flow-red: #e23b3b;     /* rojo cromado (acento principal) */
+  --color-flow-red-deep: #b71717;
+  --color-flow-cyan: #1de9d6;    /* cyan neón (acento secundario) */
+  --color-flow-cyan-deep: #0bb3c4;
+
+  --color-bone: #f4f4f5;         /* texto principal */
+  --color-ash: #9a9aa3;          /* texto secundario */
+
+  /* --- Tipografía --- */
+  --font-display: var(--font-anton);
+  --font-sans: var(--font-inter);
+
+  /* --- Animaciones --- */
+  --animate-float: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-ink);
+  color: var(--color-bone);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Halos de fondo reutilizables */
+.glow-red {
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-flow-red) 38%, transparent) 0%, transparent 70%);
+}
+.glow-cyan {
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-flow-cyan) 30%, transparent) 0%, transparent 70%);
+}
+
+/* Texto cromado con aberración (efecto del logo "5") */
+.chrome-text {
+  color: var(--color-bone);
+  text-shadow:
+    2px 0 var(--color-flow-red),
+    -2px 0 var(--color-flow-cyan);
+}
+
+/* Grilla sutil de fondo */
+.grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+/* Scrollbar oscura */
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: var(--color-ink); }
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink-3);
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-flow-red-deep); }
+
+::selection {
+  background: var(--color-flow-red);
+  color: white;
+}
