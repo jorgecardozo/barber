@@ -40,6 +40,10 @@ export type AppointmentStatus =
   | "cancelada"
   | "expirada";
 
+export type PaymentMethod = "mercadopago" | "efectivo";
+export type PaymentKind = "sena" | "saldo";
+export type PaymentState = "pendiente" | "pagado";
+
 export interface Appointment {
   id: string;
   serviceId: ServiceId;
@@ -53,7 +57,12 @@ export interface Appointment {
   priceCents: number;
   depositCents: number;
   holdExpiresAt: string | null; // ISO, solo en estado "hold"
-  paymentId: string | null;
+  // Pago de la seña
+  depositMethod: PaymentMethod | null;
+  depositStatus: PaymentState;
+  // Pago del saldo (lo que se paga en el local)
+  balanceMethod: PaymentMethod | null;
+  balanceStatus: PaymentState;
   createdAt: string;
 }
 
@@ -72,7 +81,9 @@ export interface User {
 export interface Payment {
   id: string;
   appointmentId: string;
+  barberId: BarberId;
+  kind: PaymentKind; // seña o saldo
+  method: PaymentMethod; // mercadopago o efectivo
   amountCents: number;
-  status: "pendiente" | "aprobado" | "rechazado" | "expirado";
   createdAt: string;
 }

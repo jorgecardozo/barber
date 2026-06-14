@@ -41,6 +41,7 @@ export function BookingWizard({
   const [slot, setSlot] = useState<Slot | null>(null);
   const [slots, setSlots] = useState<Slot[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [metodo, setMetodo] = useState<"mercadopago" | "efectivo">("mercadopago");
 
   const service = services.find((s) => s.id === serviceId) ?? null;
   const barber = barbers.find((b) => b.id === barberId) ?? null;
@@ -247,8 +248,34 @@ export function BookingWizard({
               <Row k="Resto en el local" v={formatARS(service.priceCents - service.depositCents)} muted />
             </dl>
 
+            {/* Método de pago de la seña */}
+            <p className="mt-5 mb-2 text-sm text-ash">¿Cómo pagás la seña?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setMetodo("mercadopago")}
+                className={`rounded-xl border p-3 text-left transition-colors ${
+                  metodo === "mercadopago" ? "border-[#009ee3] bg-[#009ee3]/10" : "border-white/10 hover:border-white/25"
+                }`}
+              >
+                <span className="block text-sm font-semibold text-bone">MercadoPago</span>
+                <span className="block text-xs text-ash">Pagás ahora, online</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setMetodo("efectivo")}
+                className={`rounded-xl border p-3 text-left transition-colors ${
+                  metodo === "efectivo" ? "border-flow-cyan bg-flow-cyan/10" : "border-white/10 hover:border-white/25"
+                }`}
+              >
+                <span className="block text-sm font-semibold text-bone">Efectivo</span>
+                <span className="block text-xs text-ash">Pagás la seña en el local</span>
+              </button>
+            </div>
+
             <p className="mt-4 rounded-lg bg-white/5 px-3 py-2 text-xs text-ash">
               La seña confirma el turno y no es reembolsable. Podés cancelar hasta 4 hs antes.
+              {metodo === "efectivo" && " Con efectivo, dejás reservado y pagás la seña al llegar."}
             </p>
 
             {userName ? (
@@ -256,8 +283,9 @@ export function BookingWizard({
                 <input type="hidden" name="serviceId" value={service.id} />
                 <input type="hidden" name="barberId" value={barber.id} />
                 <input type="hidden" name="startISO" value={slot.startISO} />
+                <input type="hidden" name="metodo" value={metodo} />
                 <button className="w-full rounded-full bg-flow-red px-6 py-3.5 font-semibold text-white shadow-[0_10px_30px_-10px] shadow-flow-red/60 ring-1 ring-white/10 transition-transform hover:scale-[1.02]">
-                  Continuar al pago de la seña →
+                  {metodo === "mercadopago" ? "Continuar al pago de la seña →" : "Confirmar turno (seña en el local) →"}
                 </button>
               </form>
             ) : (

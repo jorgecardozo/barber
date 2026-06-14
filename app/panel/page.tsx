@@ -1,150 +1,112 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { StatusBadge } from "@/components/StatusBadge";
+import { PanelHeader } from "@/components/panel/PanelHeader";
+import { DashboardCharts } from "@/components/panel/DashboardCharts";
 import { requireStaff } from "@/lib/auth";
-import { logoutAction, panelSetStatusAction } from "@/lib/actions";
 import {
   allUpcomingAppointments,
-  appointmentsOnDate,
   expireHolds,
   getBarber,
-  getService,
+  listAllAppointments,
+  listBarbers,
+  listPayments,
 } from "@/lib/store";
-import type { Appointment } from "@/lib/types";
-import { fmtDateLong, fmtTime, todayAR } from "@/lib/time";
+import { formatARS } from "@/lib/money";
+import { addDays, fmtDateLong, fmtDateShort, todayAR } from "@/lib/time";
 
-export const metadata: Metadata = { title: "Panel · Flow Site" };
+export const metadata: Metadata = { title: "Dashboard · Panel Flow Site" };
 export const dynamic = "force-dynamic";
 
 export default async function PanelPage() {
   const staff = await requireStaff();
   if (!staff) redirect("/panel/ingresar");
-
   expireHolds();
 
-  const mine = (a: Appointment) =>
-    staff.role === "admin" || a.barberId === staff.barberId;
+  const scope = (barberId: string) => staff.role === "admin" || barberId === staff.barberId;
+  const payments = listPayments().filter((p) => scope(p.barberId));
+  const appts = listAllAppointments().filter((a) => scope(a.barberId));
+  const barbers = (staff.role === "admin" ? listBarbers() : listBarbers().filter((b) => b.id === staff.barberId));
 
-  const hoy = appointmentsOnDate(todayAR()).filter(mine);
-  const hoyIds = new Set(hoy.map((a) => a.id));
-  const proximos = allUpcomingAppointments()
-    .filter(mine)
-    .filter((a) => !hoyIds.has(a.id))
-    .slice(0, 30);
+  // --- Métricas ---
+  const ingresosTotales = payments.reduce((s, p) => s + p.amountCents, 0);
+  const mp = payments.filter((p) => p.method === "mercadopago").reduce((s, p) => s + p.amountCents, 0);
+  const efectivo = payments.filter((p) => p.method === "efectivo").reduce((s, p) => s + p.amountCents, 0);
+  const cortes = appts.filter((a) => a.status === "completada").length;
+  const clientes = new Set(
+    appts.filter((a) => a.status === "completada" || a.status === "confirmada").map((a) => a.customerName),
+  ).size;
+  const proximos = allUpcomingAppointments().filter((a) => scope(a.barberId)).length;
+
+  // --- Datos para gráficos ---
+  const porBarbero = barbers.map((b) => ({
+    id: b.id,
+    name: b.name,
+    img: b.img,
+    ingreso: payments.filter((p) => p.barberId === b.id).reduce((s, p) => s + p.amountCents, 0) / 100,
+    cortes: appts.filter((a) => a.barberId === b.id && a.status === "completada").length,
+  }));
+
+  const porMetodo = [
+    { name: "MercadoPago", value: mp / 100 },
+    { name: "Efectivo", value: efectivo / 100 },
+  ];
+
+  const dias = Array.from({ length: 7 }, (_, i) => addDays(todayAR(), -(6 - i)));
+  const porDia = dias.map((d) => ({
+    label: fmtDateShort(d).day,
+    ingreso: payments.filter((p) => p.createdAt.slice(0, 10) === d).reduce((s, p) => s + p.amountCents, 0) / 100,
+  }));
 
   return (
     <>
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-ink/85 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
-          <span className="font-display text-lg tracking-wide">
-            FLOW <span className="chrome-text italic">PANEL</span>
-          </span>
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-ash">
-              {staff.name} · <span className="text-flow-cyan">{staff.role}</span>
-            </span>
-            <form action={logoutAction}>
-              <button className="rounded-full border border-white/10 px-3 py-1.5 text-ash hover:text-bone">Salir</button>
-            </form>
+      <PanelHeader user={staff} active="dashboard" />
+      <main className="mx-auto max-w-6xl flex-1 px-5 py-8">
+        <h1 className="font-display text-3xl">Dashboard</h1>
+        <p className="mb-6 text-sm text-ash">{fmtDateLong(todayAR())}</p>
+
+        {/* Stat cards */}
+        <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat big={formatARS(ingresosTotales)} l="Ingresos totales" accent />
+          <Stat big={String(clientes)} l="Clientes atendidos" />
+          <Stat big={String(cortes)} l="Cortes realizados" />
+          <Stat big={String(proximos)} l="Próximos turnos" />
+        </div>
+
+        <DashboardCharts porBarbero={porBarbero} porMetodo={porMetodo} porDia={porDia} />
+
+        {/* Per-barbero */}
+        <section className="mt-8">
+          <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-flow-cyan">Por barbero</h2>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {porBarbero.map((b) => (
+              <div key={b.id} className="flex items-center gap-3 rounded-2xl border border-white/8 bg-ink-2 p-4">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={b.img} alt={b.name} className="h-12 w-12 rounded-full object-cover" />
+                <div>
+                  <p className="font-display text-lg">{b.name}</p>
+                  <p className="text-xs text-ash">
+                    {b.cortes} cortes · <span className="text-flow-cyan">{formatARS(b.ingreso * 100)}</span>
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-      </header>
+        </section>
 
-      <main className="mx-auto max-w-5xl flex-1 px-5 py-10">
-        <h1 className="font-display text-3xl">Agenda</h1>
-        <p className="mt-1 text-sm text-ash">{fmtDateLong(todayAR())}</p>
-
-        {/* Stats */}
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat n={hoy.length} l="Turnos hoy" />
-          <Stat n={proximos.length} l="Próximos" />
-          <Stat n={hoy.filter((a) => a.status === "completada").length} l="Completados hoy" />
-          <Stat n={hoy.filter((a) => a.status === "no_show").length} l="Ausentes hoy" />
-        </div>
-
-        <Section title="Hoy">
-          {hoy.length === 0 ? (
-            <Empty>No hay turnos para hoy.</Empty>
-          ) : (
-            hoy.map((a) => <AgendaRow key={a.id} a={a} showBarber={staff.role === "admin"} />)
-          )}
-        </Section>
-
-        <Section title="Próximos turnos">
-          {proximos.length === 0 ? (
-            <Empty>No hay próximos turnos.</Empty>
-          ) : (
-            proximos.map((a) => <AgendaRow key={a.id} a={a} showBarber={staff.role === "admin"} showDate />)
-          )}
-        </Section>
+        <Link href="/panel/turnos" className="mt-8 inline-block rounded-full bg-flow-red px-6 py-2.5 text-sm font-semibold text-white">
+          Ver todos los turnos →
+        </Link>
       </main>
     </>
   );
 }
 
-function Stat({ n, l }: { n: number; l: string }) {
+function Stat({ big, l, accent }: { big: string; l: string; accent?: boolean }) {
   return (
     <div className="rounded-2xl border border-white/8 bg-ink-2 p-4">
-      <p className="font-display text-3xl">{n}</p>
+      <p className={`font-display text-2xl ${accent ? "text-flow-cyan" : "text-bone"}`}>{big}</p>
       <p className="text-xs uppercase tracking-wider text-ash">{l}</p>
     </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="mt-10">
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-flow-cyan">{title}</h2>
-      <div className="space-y-2">{children}</div>
-    </section>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="rounded-xl border border-white/8 bg-ink-2 px-4 py-6 text-center text-sm text-ash">{children}</p>;
-}
-
-function AgendaRow({ a, showBarber, showDate }: { a: Appointment; showBarber: boolean; showDate?: boolean }) {
-  const service = getService(a.serviceId);
-  const barber = getBarber(a.barberId);
-  return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-white/8 bg-ink-2 px-4 py-3">
-      <div className="flex items-center gap-3">
-        <span className="font-display text-xl text-flow-cyan">{fmtTime(new Date(a.start))}</span>
-        <div>
-          <p className="font-medium text-bone">
-            {a.customerName} <span className="text-ash">· {service?.name}</span>
-          </p>
-          <p className="text-xs text-ash">
-            {showBarber && <>{barber?.name} · </>}
-            {showDate && <>{fmtDateLong(a.start.slice(0, 10))} · </>}
-            {a.customerPhone}
-          </p>
-        </div>
-      </div>
-
-      <div className="ml-auto flex items-center gap-2">
-        <StatusBadge status={a.status} />
-        {a.status === "confirmada" && (
-          <div className="flex gap-1">
-            <StatusBtn id={a.id} status="completada" label="✓ Hizo" />
-            <StatusBtn id={a.id} status="no_show" label="Ausente" />
-            <StatusBtn id={a.id} status="cancelada" label="Cancelar" />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function StatusBtn({ id, status, label }: { id: string; status: string; label: string }) {
-  return (
-    <form action={panelSetStatusAction}>
-      <input type="hidden" name="id" value={id} />
-      <input type="hidden" name="status" value={status} />
-      <button className="rounded-full border border-white/10 px-2.5 py-1 text-[11px] text-ash transition-colors hover:border-white/30 hover:text-bone">
-        {label}
-      </button>
-    </form>
   );
 }

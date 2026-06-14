@@ -10,24 +10,27 @@ import { fmtDateLong, fmtTime } from "@/lib/time";
 export const metadata: Metadata = { title: "Turno confirmado · Flow Site" };
 export const dynamic = "force-dynamic";
 
+const METODO: Record<string, string> = { mercadopago: "MercadoPago", efectivo: "Efectivo" };
+
+function gcalDate(iso: string): string {
+  return iso.replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
 export default async function ConfirmacionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getSessionUser();
   const appt = getAppointment(id);
   const service = appt ? getService(appt.serviceId) : undefined;
   const barber = appt ? getBarber(appt.barberId) : undefined;
-
   const ok = appt && appt.status === "confirmada" && service && barber;
 
-  // Mensaje de WhatsApp pre-cargado (aviso/confirmación al cliente)
-  const waText = ok
-    ? encodeURIComponent(
-        `¡Hola! Confirmé mi turno en Flow Site:\n` +
-          `• ${service!.name} con ${barber!.name}\n` +
-          `• ${fmtDateLong(appt!.start.slice(0, 10))} a las ${fmtTime(new Date(appt!.start))}\n` +
-          `• Seña pagada: ${formatARS(appt!.depositCents)}`,
-      )
-    : "";
+  const gcal = ok
+    ? `https://calendar.google.com/calendar/render?action=TEMPLATE` +
+      `&text=${encodeURIComponent(`${service!.name} con ${barber!.name} — Flow Site`)}` +
+      `&dates=${gcalDate(appt!.start)}/${gcalDate(appt!.end)}` +
+      `&details=${encodeURIComponent(`Turno en Flow Site. Seña: ${formatARS(appt!.depositCents)}.`)}` +
+      `&location=${encodeURIComponent(DECISIONS.business.address)}`
+    : "#";
 
   return (
     <>
@@ -57,19 +60,23 @@ export default async function ConfirmacionPage({ params }: { params: Promise<{ i
                   <Row k="Barbero" v={barber!.name} />
                   <Row k="Día" v={fmtDateLong(appt!.start.slice(0, 10))} />
                   <Row k="Hora" v={fmtTime(new Date(appt!.start))} />
-                  <Row k="Seña pagada" v={formatARS(appt!.depositCents)} />
+                  {appt!.depositStatus === "pagado" ? (
+                    <Row k={`Seña pagada (${METODO[appt!.depositMethod ?? "mercadopago"]})`} v={formatARS(appt!.depositCents)} />
+                  ) : (
+                    <Row k="Seña (efectivo, al llegar)" v={formatARS(appt!.depositCents)} accent />
+                  )}
                   <Row k="A pagar en el local" v={formatARS(appt!.priceCents - appt!.depositCents)} />
                 </dl>
               </div>
 
               <div className="mt-6 flex flex-col gap-3">
                 <a
-                  href={`https://wa.me/${DECISIONS.business.whatsapp}?text=${waText}`}
+                  href={gcal}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-3 font-semibold text-[#062b16]"
+                  className="flex items-center justify-center gap-2 rounded-full bg-flow-red px-6 py-3 font-semibold text-white shadow-[0_10px_30px_-10px] shadow-flow-red/60 ring-1 ring-white/10"
                 >
-                  Guardar turno en WhatsApp
+                  📅 Agregar al calendario
                 </a>
                 <Link href="/mis-turnos" className="rounded-full border border-white/15 px-6 py-3 font-semibold text-bone transition-colors hover:bg-white/5">
                   Ver mis turnos
@@ -77,7 +84,8 @@ export default async function ConfirmacionPage({ params }: { params: Promise<{ i
               </div>
 
               <p className="mt-6 text-xs text-ash">
-                📲 El barbero ya recibió el aviso de tu turno. (En esta demo el aviso a Telegram está simulado.)
+                Tu turno ya quedó registrado. El barbero lo ve en su panel.
+                {appt!.depositStatus !== "pagado" && " Acordate de pagar la seña al llegar."}
               </p>
             </>
           )}
@@ -87,11 +95,11 @@ export default async function ConfirmacionPage({ params }: { params: Promise<{ i
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function Row({ k, v, accent }: { k: string; v: string; accent?: boolean }) {
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-3">
       <dt className="text-ash">{k}</dt>
-      <dd className="font-medium text-bone">{v}</dd>
+      <dd className={`text-right font-medium ${accent ? "text-flow-cyan" : "text-bone"}`}>{v}</dd>
     </div>
   );
 }
