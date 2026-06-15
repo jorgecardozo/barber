@@ -46,6 +46,11 @@ function waLink(phone: string, client: string): string {
   return `https://wa.me/${phone}?text=${txt}`;
 }
 
+// Avatar ilustrado y determinístico por nombre (DiceBear)
+function avatarUrl(name: string): string {
+  return `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(name)}&radius=50`;
+}
+
 export function ColaView({ barbers, single, serverNow }: { barbers: BarberQueue[]; single: boolean; serverNow: number }) {
   const [now, setNow] = useState(serverNow);
   const [selected, setSelected] = useState<string | null>(null);
@@ -113,6 +118,14 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
     });
   }
 
+  // Sentar a alguien que NO es el siguiente → confirma que se saltea el orden
+  function sentar(item: QueueItem) {
+    if (siguiente && item.id !== siguiente.id) {
+      if (!confirm(`Vas a saltear a ${siguiente.client} y sentar a ${item.client}. ¿Seguro?`)) return;
+    }
+    act(empezarTurnoAction, item.id, `${item.client} pasó al sillón`);
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
       {/* Sillón */}
@@ -123,7 +136,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
         </div>
 
         <div className="flex flex-col items-center">
-          <BarberChair occupied={!!atendiendo} />
+          <BarberChair occupied={!!atendiendo} avatar={atendiendo ? avatarUrl(atendiendo.client) : undefined} name={atendiendo?.client} />
           <AnimatePresence mode="wait">
             {atendiendo ? (
               <motion.div key={atendiendo.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="-mt-2 text-center">
@@ -167,7 +180,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
               </Button>
             </div>
           ) : siguiente ? (
-            <Button className="w-full" disabled={pending} onClick={() => act(empezarTurnoAction, siguiente.id, `${siguiente.client} pasó al sillón`)}>
+            <Button className="w-full" disabled={pending} onClick={() => sentar(siguiente)}>
               <UserPlus className="h-4 w-4" /> Llamar a {siguiente.client.split(" ")[0]}
             </Button>
           ) : null}
@@ -180,13 +193,17 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
         <AnimatePresence mode="popLayout">
           {siguiente && (
             <motion.div key={siguiente.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -28, transition: { duration: 0.18 } }} transition={{ type: "spring", stiffness: 320, damping: 26 }} className="mb-4 flex items-center gap-4 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4">
+              <Avatar className="h-14 w-14 ring-2 ring-amber-400/40">
+                <AvatarImage src={avatarUrl(siguiente.client)} alt={siguiente.client} />
+                <AvatarFallback>{siguiente.client[0]}</AvatarFallback>
+              </Avatar>
               <div className="flex-1">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-300">Siguiente</span>
                 <p className="font-display text-2xl leading-tight">{siguiente.client}</p>
                 <p className="text-sm text-muted-foreground">{siguiente.service} · turno {siguiente.time}</p>
               </div>
               <div className="flex flex-col gap-2">
-                <Button size="sm" disabled={!!atendiendo || pending} onClick={() => act(empezarTurnoAction, siguiente.id, `${siguiente.client} pasó al sillón`)}>
+                <Button size="sm" disabled={!!atendiendo || pending} onClick={() => sentar(siguiente)}>
                   <UserPlus className="h-4 w-4" /> Sentar
                 </Button>
                 <Button size="sm" variant="outline" asChild>
@@ -208,7 +225,11 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
           <AnimatePresence>
             {espera.map((i, idx) => (
               <motion.li key={i.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -28, transition: { duration: 0.18 } }} transition={{ type: "spring", stiffness: 340, damping: 26 }} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary font-display text-sm">{idx + 2}</span>
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary font-display text-xs text-muted-foreground">{idx + 2}</span>
+                <Avatar className="h-10 w-10 shrink-0">
+                  <AvatarImage src={avatarUrl(i.client)} alt={i.client} />
+                  <AvatarFallback>{i.client[0]}</AvatarFallback>
+                </Avatar>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{i.client}</p>
                   <p className="truncate text-xs text-muted-foreground">{i.service} · {i.time}</p>
@@ -216,7 +237,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
                 <Button size="sm" variant="ghost" className="text-muted-foreground" asChild>
                   <a href={waLink(i.phone, i.client)} target="_blank" rel="noopener noreferrer" title="Avisar por WhatsApp"><Zap className="h-4 w-4" /></a>
                 </Button>
-                <Button size="sm" variant="outline" disabled={!!atendiendo || pending} onClick={() => act(empezarTurnoAction, i.id, `${i.client} pasó al sillón`)}>Sentar</Button>
+                <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-foreground" disabled={!!atendiendo || pending} onClick={() => sentar(i)} title="Sentar (saltea el orden)">Sentar</Button>
               </motion.li>
             ))}
           </AnimatePresence>
@@ -227,61 +248,63 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
   );
 }
 
-/* ---------- Sillón de barbero (SVG animado) ---------- */
-function BarberChair({ occupied }: { occupied: boolean }) {
+/* ---------- Sillón de barbero (con persona ilustrada animada) ---------- */
+function BarberChair({ occupied, avatar, name }: { occupied: boolean; avatar?: string; name?: string }) {
   const stroke = occupied ? "var(--chart-2)" : "rgba(255,255,255,0.12)";
   return (
-    <div className="relative my-2 h-44 w-44">
+    <div className="relative my-2 h-48 w-48">
       {occupied && (
         <motion.div
           className="absolute inset-0 rounded-full"
-          style={{ background: "radial-gradient(circle, color-mix(in srgb, var(--chart-2) 30%, transparent) 0%, transparent 65%)" }}
-          animate={{ opacity: [0.45, 0.8, 0.45], scale: [0.95, 1.05, 0.95] }}
-          transition={{ duration: 2.2, repeat: Infinity }}
+          style={{ background: "radial-gradient(circle, color-mix(in srgb, var(--chart-2) 32%, transparent) 0%, transparent 65%)" }}
+          animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.95, 1.06, 0.95] }}
+          transition={{ duration: 2.4, repeat: Infinity }}
         />
       )}
+
+      <svg viewBox="0 0 160 180" className="relative h-full w-full">
+        {/* base / pie */}
+        <ellipse cx="80" cy="164" rx="48" ry="9" fill="#15151c" />
+        <rect x="73" y="124" width="14" height="40" rx="4" fill="#26262e" />
+        <rect x="52" y="138" width="56" height="9" rx="4" fill="#2a2a33" />
+        {/* apoyabrazos */}
+        <rect x="28" y="98" width="14" height="36" rx="6" fill="#22222a" />
+        <rect x="118" y="98" width="14" height="36" rx="6" fill="#22222a" />
+        {/* asiento */}
+        <rect x="38" y="104" width="84" height="26" rx="10" fill="#16161d" stroke={stroke} strokeWidth="1.5" />
+        {/* respaldo */}
+        <rect x="42" y="40" width="76" height="74" rx="18" fill="#14141a" stroke={stroke} strokeWidth="1.5" />
+      </svg>
+
+      {/* Persona sentada (avatar ilustrado) */}
+      <AnimatePresence>
+        {occupied && (
+          <motion.div
+            key={avatar}
+            initial={{ opacity: 0, y: 14, scale: 0.85 }}
+            animate={{ opacity: 1, y: [0, -3, 0], scale: 1 }}
+            exit={{ opacity: 0, y: 14, scale: 0.85 }}
+            transition={{ y: { duration: 3, repeat: Infinity, ease: "easeInOut" }, default: { duration: 0.45, type: "spring", stiffness: 200, damping: 18 } }}
+            className="absolute left-1/2 top-[12%] -translate-x-1/2"
+          >
+            <Avatar className="h-20 w-20 ring-2 ring-flow-cyan/60 shadow-[0_0_18px_color-mix(in_srgb,var(--chart-2)_45%,transparent)]">
+              <AvatarImage src={avatar} alt={name} />
+              <AvatarFallback>{name?.[0]}</AvatarFallback>
+            </Avatar>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Tijera haciendo snip */}
       {occupied && (
         <motion.div
-          className="absolute left-[54%] top-[22%] text-flow-cyan drop-shadow-[0_0_6px_var(--chart-2)]"
-          animate={{ rotate: [0, -24, 0], y: [0, -2, 0] }}
+          className="absolute left-[66%] top-[14%] text-flow-cyan drop-shadow-[0_0_6px_var(--chart-2)]"
+          animate={{ rotate: [0, -26, 0], y: [0, -2, 0] }}
           transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }}
         >
-          <Scissors className="h-5 w-5" />
+          <Scissors className="h-6 w-6" />
         </motion.div>
       )}
-      <svg viewBox="0 0 160 180" className="relative h-full w-full">
-        {/* base */}
-        <ellipse cx="80" cy="162" rx="46" ry="9" fill="#15151c" />
-        <rect x="73" y="120" width="14" height="40" rx="4" fill="#26262e" />
-        <rect x="54" y="134" width="52" height="9" rx="4" fill="#2a2a33" />
-        {/* armrests */}
-        <rect x="32" y="92" width="13" height="34" rx="5" fill="#22222a" />
-        <rect x="115" y="92" width="13" height="34" rx="5" fill="#22222a" />
-        {/* seat */}
-        <motion.rect x="40" y="94" width="80" height="24" rx="9" fill={occupied ? "#1b1b24" : "#16161d"} stroke={stroke} strokeWidth="1.5" animate={{ y: occupied ? 94 : 96 }} />
-        {/* backrest */}
-        <rect x="46" y="28" width="68" height="74" rx="16" fill="#16161d" stroke={stroke} strokeWidth="1.5" />
-        <rect x="64" y="18" width="32" height="18" rx="9" fill="#16161d" stroke={stroke} strokeWidth="1.5" />
-        {/* persona */}
-        <AnimatePresence>
-          {occupied && (
-            <motion.g
-              key="persona"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0, scale: [1, 1.035, 1] }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ scale: { duration: 3.2, repeat: Infinity, ease: "easeInOut" }, default: { duration: 0.4 } }}
-              style={{ transformOrigin: "80px 80px" }}
-            >
-              <circle cx="80" cy="60" r="15" fill="var(--chart-2)" opacity="0.9" />
-              <path d="M58 98 q22 -24 44 0 z" fill="var(--chart-2)" opacity="0.9" />
-              {/* capa de corte */}
-              <path d="M56 96 q24 -8 48 0 l-2 22 q-22 6 -44 0 z" fill="#0e0e13" opacity="0.85" />
-            </motion.g>
-          )}
-        </AnimatePresence>
-      </svg>
     </div>
   );
 }
@@ -305,10 +328,16 @@ function BarberCard({ barber, onClick }: { barber: BarberQueue; onClick: () => v
           <span className="text-[10px] font-semibold uppercase tracking-widest text-flow-cyan">En el sillón</span>
         </div>
         {atendiendo ? (
-          <>
-            <p className="font-display text-xl leading-tight">{atendiendo.client}</p>
-            <p className="text-xs text-muted-foreground">{atendiendo.service}</p>
-          </>
+          <div className="mt-1 flex items-center gap-2">
+            <Avatar className="h-9 w-9 ring-1 ring-flow-cyan/40">
+              <AvatarImage src={avatarUrl(atendiendo.client)} alt={atendiendo.client} />
+              <AvatarFallback>{atendiendo.client[0]}</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-display text-lg leading-tight">{atendiendo.client}</p>
+              <p className="text-xs text-muted-foreground">{atendiendo.service}</p>
+            </div>
+          </div>
         ) : (
           <p className="text-sm text-muted-foreground">Sillón libre</p>
         )}
