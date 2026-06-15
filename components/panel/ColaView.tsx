@@ -226,7 +226,10 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
           </span>
         </div>
 
-        <motion.ol layout className="space-y-2">
+        <motion.ol
+          layout
+          className="max-h-[58vh] space-y-2 overflow-y-auto overscroll-contain pr-1 [scrollbar-color:var(--border)_transparent] [scrollbar-width:thin]"
+        >
           <AnimatePresence>
             {espera.map((i, idx) => (
               <motion.li key={i.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -28, transition: { duration: 0.18 } }} transition={{ type: "spring", stiffness: 340, damping: 26 }} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
@@ -253,57 +256,110 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
   );
 }
 
-/* ---------- Sillón de barbero (con persona ilustrada animada) ---------- */
+/* ---------- Sillón de barbero (persona sentada, con capa, piernas y cara real) ---------- */
 function BarberChair({ occupied, avatar, name }: { occupied: boolean; avatar?: string; name?: string }) {
-  const stroke = occupied ? "var(--chart-2)" : "rgba(255,255,255,0.12)";
+  const accent = occupied ? "var(--chart-2)" : "rgba(255,255,255,0.14)";
+  const bob = { y: [0, -2, 0] };
+  const bobT = { duration: 3.4, repeat: Infinity, ease: "easeInOut" as const };
   return (
-    <div className="relative my-2 h-48 w-48">
+    <div className="relative mx-auto my-1 aspect-[220/290] w-56 max-w-full">
+      {/* halo */}
       {occupied && (
         <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{ background: "radial-gradient(circle, color-mix(in srgb, var(--chart-2) 32%, transparent) 0%, transparent 65%)" }}
-          animate={{ opacity: [0.4, 0.8, 0.4], scale: [0.95, 1.06, 0.95] }}
-          transition={{ duration: 2.4, repeat: Infinity }}
+          className="absolute inset-0"
+          style={{ background: "radial-gradient(circle at 50% 34%, color-mix(in srgb, var(--chart-2) 26%, transparent) 0%, transparent 60%)" }}
+          animate={{ opacity: [0.45, 0.85, 0.45], scale: [0.97, 1.05, 0.97] }}
+          transition={{ duration: 2.6, repeat: Infinity }}
         />
       )}
 
-      <svg viewBox="0 0 160 180" className="relative h-full w-full">
-        {/* base / pie */}
-        <ellipse cx="80" cy="164" rx="48" ry="9" fill="#15151c" />
-        <rect x="73" y="124" width="14" height="40" rx="4" fill="#26262e" />
-        <rect x="52" y="138" width="56" height="9" rx="4" fill="#2a2a33" />
-        {/* apoyabrazos */}
-        <rect x="28" y="98" width="14" height="36" rx="6" fill="#22222a" />
-        <rect x="118" y="98" width="14" height="36" rx="6" fill="#22222a" />
+      <svg viewBox="0 0 220 290" className="relative h-full w-full">
+        <defs>
+          <linearGradient id="bc-chrome" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#3a3a44" />
+            <stop offset="38%" stopColor="#9aa0aa" />
+            <stop offset="62%" stopColor="#cfd5dc" />
+            <stop offset="100%" stopColor="#454550" />
+          </linearGradient>
+          <linearGradient id="bc-leather" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#c33a2c" />
+            <stop offset="100%" stopColor="#7c1f17" />
+          </linearGradient>
+          <linearGradient id="bc-cape" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#25252e" />
+            <stop offset="100%" stopColor="#121217" />
+          </linearGradient>
+        </defs>
+
+        {/* sombra en el piso */}
+        <ellipse cx="110" cy="277" rx="84" ry="11" fill="rgba(0,0,0,0.45)" />
+
+        {/* base cromada + apoyapiés */}
+        <rect x="101" y="206" width="18" height="48" rx="4" fill="url(#bc-chrome)" />
+        <rect x="56" y="252" width="108" height="9" rx="4.5" fill="url(#bc-chrome)" />
+        <circle cx="60" cy="261" r="6" fill="#24242b" stroke="url(#bc-chrome)" strokeWidth="2" />
+        <circle cx="160" cy="261" r="6" fill="#24242b" stroke="url(#bc-chrome)" strokeWidth="2" />
+        <rect x="74" y="233" width="72" height="7" rx="3.5" fill="url(#bc-chrome)" />
+
+        {/* respaldo de cuero rojo */}
+        <rect x="66" y="60" width="88" height="130" rx="24" fill="url(#bc-leather)" stroke={accent} strokeWidth="2" />
+        <rect x="75" y="68" width="70" height="42" rx="16" fill="rgba(255,255,255,0.06)" />
         {/* asiento */}
-        <rect x="38" y="104" width="84" height="26" rx="10" fill="#16161d" stroke={stroke} strokeWidth="1.5" />
-        {/* respaldo */}
-        <rect x="42" y="40" width="76" height="74" rx="18" fill="#14141a" stroke={stroke} strokeWidth="1.5" />
+        <rect x="60" y="178" width="100" height="24" rx="10" fill="url(#bc-leather)" stroke={accent} strokeWidth="1.5" />
+
+        {occupied && (
+          <motion.g animate={bob} transition={bobT}>
+            {/* piernas + zapatillas (asoman bajo la capa) */}
+            <rect x="85" y="186" width="18" height="52" rx="8" fill="#4a5568" />
+            <rect x="117" y="186" width="18" height="52" rx="8" fill="#4a5568" />
+            {/* zapatillas blancas */}
+            <rect x="78" y="230" width="30" height="12" rx="5" fill="#eceef2" />
+            <rect x="78" y="230" width="30" height="4.5" rx="2.25" fill="#cdd2db" />
+            <rect x="112" y="230" width="30" height="12" rx="5" fill="#eceef2" />
+            <rect x="112" y="230" width="30" height="4.5" rx="2.25" fill="#cdd2db" />
+            {/* capa de barbería cubriendo el cuerpo (hasta las rodillas) */}
+            <path
+              d="M110 116 C92 116 80 127 76 151 L72 186 Q110 197 148 186 L144 151 C140 127 128 116 110 116 Z"
+              fill="url(#bc-cape)"
+              stroke={accent}
+              strokeWidth="1.4"
+            />
+            <path d="M110 126 L110 203" stroke="rgba(255,255,255,0.05)" strokeWidth="2" />
+            {/* cuello de la capa (acento cyan) */}
+            <path d="M98 120 Q110 134 122 120" fill="none" stroke="var(--chart-2)" strokeWidth="2" opacity="0.65" />
+          </motion.g>
+        )}
+
+        {/* apoyabrazos al frente */}
+        <rect x="52" y="172" width="14" height="34" rx="7" fill="#202028" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
+        <rect x="154" y="172" width="14" height="34" rx="7" fill="#202028" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
       </svg>
 
-      {/* Persona sentada (avatar ilustrado) */}
+      {/* Cabeza = cara real del cliente, asomando de la capa */}
       <AnimatePresence>
         {occupied && (
           <motion.div
             key={avatar}
-            initial={{ opacity: 0, y: 14, scale: 0.85 }}
-            animate={{ opacity: 1, y: [0, -3, 0], scale: 1 }}
-            exit={{ opacity: 0, y: 14, scale: 0.85 }}
-            transition={{ y: { duration: 3, repeat: Infinity, ease: "easeInOut" }, default: { duration: 0.45, type: "spring", stiffness: 200, damping: 18 } }}
-            className="absolute left-1/2 top-[12%] -translate-x-1/2"
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1, ...bob }}
+            exit={{ opacity: 0, scale: 0.85 }}
+            transition={{ y: bobT, default: { duration: 0.45, type: "spring", stiffness: 200, damping: 18 } }}
+            className="absolute left-1/2 top-[31.5%] h-16 w-16 -translate-x-1/2 -translate-y-1/2"
           >
-            <Avatar className="h-20 w-20 ring-2 ring-flow-cyan/60 shadow-[0_0_18px_color-mix(in_srgb,var(--chart-2)_45%,transparent)]">
-              <AvatarImage src={avatar} alt={name} />
-              <AvatarFallback>{name?.[0]}</AvatarFallback>
-            </Avatar>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={avatar}
+              alt={name}
+              className="h-full w-full rounded-full border-2 border-flow-cyan/70 bg-[#0c0c12] object-cover shadow-[0_0_18px_color-mix(in_srgb,var(--chart-2)_45%,transparent)]"
+            />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Tijera haciendo snip */}
+      {/* Tijera del barbero haciendo snip */}
       {occupied && (
         <motion.div
-          className="absolute left-[66%] top-[14%] text-flow-cyan drop-shadow-[0_0_6px_var(--chart-2)]"
+          className="absolute left-[62%] top-[20%] text-flow-cyan drop-shadow-[0_0_6px_var(--chart-2)]"
           animate={{ rotate: [0, -26, 0], y: [0, -2, 0] }}
           transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }}
         >
