@@ -37,6 +37,7 @@ export interface WorkingHours {
 export type AppointmentStatus =
   | "hold"
   | "confirmada"
+  | "en_curso"
   | "completada"
   | "no_show"
   | "cancelada"

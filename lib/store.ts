@@ -182,6 +182,7 @@ function buildSeed(): { appointments: Appointment[]; payments: Payment[] } {
   for (const b of activeBarbers) {
     const wh = WORKING_HOURS.find((w) => w.barberId === b.id && w.weekday === todayWd);
     if (!wh) continue;
+    let kept = 0;
     for (const hhmm of todayTimes) {
       if (rand() < 0.18) continue; // saltea ~1-2 → ~7-8 por barbero, variado
       const svc = fillServices[Math.floor(rand() * fillServices.length)];
@@ -189,6 +190,11 @@ function buildSeed(): { appointments: Appointment[]; payments: Payment[] } {
       const end = new Date(start.getTime() + svc.durationMin * 60_000);
       const depositCents = depositForPrice(svc.priceCents);
       const senaMethod: PaymentMethod = rand() < 0.55 ? "mercadopago" : "efectivo";
+      // 0 = ya atendido, 1 = en el sillón ahora, resto = en espera
+      const status: Appointment["status"] = kept === 0 ? "completada" : kept === 1 ? "en_curso" : "confirmada";
+      const completed = status === "completada";
+      const saldoMethod: PaymentMethod = rand() < 0.45 ? "mercadopago" : "efectivo";
+      kept++;
       aSeq++;
       const appt: Appointment = {
         id: `seed-${String(aSeq).padStart(4, "0")}`,
@@ -199,19 +205,23 @@ function buildSeed(): { appointments: Appointment[]; payments: Payment[] } {
         customerPhone: "54929955" + String(51000 + aSeq),
         start: start.toISOString(),
         end: end.toISOString(),
-        status: "confirmada",
+        status,
         priceCents: svc.priceCents,
         depositCents,
         holdExpiresAt: null,
         depositMethod: senaMethod,
         depositStatus: "pagado",
-        balanceMethod: null,
-        balanceStatus: "pendiente",
+        balanceMethod: completed ? saldoMethod : null,
+        balanceStatus: completed ? "pagado" : "pendiente",
         createdAt: start.toISOString(),
       };
       appointments.push(appt);
       pSeq++;
       payments.push({ id: `pseed-${pSeq}`, appointmentId: appt.id, barberId: b.id, kind: "sena", method: senaMethod, amountCents: depositCents, createdAt: start.toISOString() });
+      if (completed) {
+        pSeq++;
+        payments.push({ id: `pseed-${pSeq}`, appointmentId: appt.id, barberId: b.id, kind: "saldo", method: saldoMethod, amountCents: svc.priceCents - depositCents, createdAt: end.toISOString() });
+      }
     }
   }
 
@@ -343,7 +353,7 @@ export function activeAppointmentsForBarber(barberId: string): Appointment[] {
   const now = nowMs();
   return db().appointments.filter((a) => {
     if (a.barberId !== barberId) return false;
-    if (a.status === "confirmada" || a.status === "completada" || a.status === "no_show") return true;
+    if (a.status === "confirmada" || a.status === "en_curso" || a.status === "completada" || a.status === "no_show") return true;
     if (a.status === "hold" && a.holdExpiresAt && Date.parse(a.holdExpiresAt) > now) return true;
     return false;
   });
@@ -554,7 +564,7 @@ export function appointmentsOnDate(dateStr: string): Appointment[] {
   return db()
     .appointments.filter(
       (a) =>
-        (a.status === "confirmada" || a.status === "completada" || a.status === "no_show") &&
+        (a.status === "confirmada" || a.status === "en_curso" || a.status === "completada" || a.status === "no_show") &&
         a.start.slice(0, 10) === dayUtc,
     )
     .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));

@@ -120,6 +120,38 @@ export async function panelSetStatusAction(formData: FormData) {
   setAppointmentStatus(id, status);
   revalidatePath("/panel");
   revalidatePath("/panel/turnos");
+  revalidatePath("/panel/cola");
+}
+
+/** Cola: sentar al cliente en el sillón (en curso). */
+export async function empezarTurnoAction(formData: FormData) {
+  if (!(await requireStaff())) redirect("/panel/ingresar");
+  setAppointmentStatus(String(formData.get("id") || ""), "en_curso");
+  revalidatePath("/panel/cola");
+  revalidatePath("/panel/turnos");
+}
+
+/** Cola: terminar la atención cobrando el saldo (efectivo/MP) o sin cobro. */
+export async function terminarTurnoAction(formData: FormData) {
+  if (!(await requireStaff())) redirect("/panel/ingresar");
+  const id = String(formData.get("id") || "");
+  const method = String(formData.get("method") || "");
+  const appt = getAppointment(id);
+  if (appt && appt.balanceStatus === "pendiente" && (method === "efectivo" || method === "mercadopago")) {
+    registrarSaldo(id, method as PaymentMethod);
+  }
+  setAppointmentStatus(id, "completada");
+  revalidatePath("/panel/cola");
+  revalidatePath("/panel/turnos");
+  revalidatePath("/panel");
+}
+
+/** Cola: marcar que el cliente no vino (no-show). */
+export async function noShowTurnoAction(formData: FormData) {
+  if (!(await requireStaff())) redirect("/panel/ingresar");
+  setAppointmentStatus(String(formData.get("id") || ""), "no_show");
+  revalidatePath("/panel/cola");
+  revalidatePath("/panel/turnos");
 }
 
 /** Registra el cobro de la seña en efectivo. */

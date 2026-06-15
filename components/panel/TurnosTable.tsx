@@ -58,6 +58,7 @@ export type TurnoRow = {
 const METODO: Record<string, string> = { mercadopago: "MercadoPago", efectivo: "Efectivo" };
 const ESTADOS: { v: AppointmentStatus; l: string }[] = [
   { v: "confirmada", l: "Confirmado" },
+  { v: "en_curso", l: "En el sillón" },
   { v: "completada", l: "Completado" },
   { v: "no_show", l: "Ausente" },
   { v: "cancelada", l: "Cancelado" },
@@ -66,6 +67,7 @@ const ESTADOS: { v: AppointmentStatus; l: string }[] = [
 const BADGE: Record<AppointmentStatus, string> = {
   hold: "bg-amber-400/15 text-amber-300 border-transparent",
   confirmada: "bg-flow-cyan/15 text-flow-cyan border-transparent",
+  en_curso: "bg-flow-cyan/25 text-flow-cyan border-transparent",
   completada: "bg-white/10 text-muted-foreground border-transparent",
   no_show: "bg-flow-red/15 text-flow-red border-transparent",
   cancelada: "bg-white/5 text-muted-foreground border-transparent line-through",

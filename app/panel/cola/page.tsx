@@ -34,8 +34,11 @@ export default async function ColaPage() {
         endMs: Date.parse(a.end),
         time: fmtTime(new Date(a.start)),
         client: a.customerName,
+        phone: a.customerPhone,
         service: getService(a.serviceId)?.name ?? "",
         status: a.status,
+        balanceCents: a.priceCents - a.depositCents,
+        balancePaid: a.balanceStatus === "pagado",
       })),
   }));
 
