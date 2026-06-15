@@ -19,12 +19,12 @@ export default async function HorariosPage({
   const sp = await searchParams;
 
   const isAdmin = staff.role === "admin";
-  const activos = listBarbers().filter((b) => b.active);
+  const activos = (await listBarbers()).filter((b) => b.active);
 
   // Barbero: su propio perfil. Admin: el seleccionado (o el primero).
-  let barber = isAdmin
-    ? (sp.barber ? getBarber(sp.barber) : activos[0])
-    : getBarberByUserId(staff.id);
+  const barber = isAdmin
+    ? (sp.barber ? await getBarber(sp.barber) : activos[0])
+    : await getBarberByUserId(staff.id);
 
   if (!isAdmin && (!barber || !barber.active)) {
     return (
@@ -37,7 +37,7 @@ export default async function HorariosPage({
     );
   }
 
-  const hours = barber ? workingHoursForBarber(barber.id).map((h) => ({ weekday: h.weekday, open: h.open, close: h.close, breakStart: h.breakStart, breakEnd: h.breakEnd })) : [];
+  const hours = barber ? (await workingHoursForBarber(barber.id)).map((h) => ({ weekday: h.weekday, open: h.open, close: h.close, breakStart: h.breakStart, breakEnd: h.breakEnd })) : [];
 
   return (
     <>

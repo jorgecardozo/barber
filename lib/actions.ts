@@ -6,8 +6,6 @@ import {
   cancelAppointment,
   confirmDepositEfectivo,
   createHold,
-  createUser,
-  findUserByEmail,
   getAppointment,
   payDepositMercadoPago,
   registrarSaldo,
@@ -17,21 +15,23 @@ import {
   SlotTakenError,
   updateBarber,
 } from "./store";
-import { clearSession, getSessionUser, requireStaff, setSession } from "./auth";
+import { getSessionUser, requireStaff } from "./auth";
+import { createClient } from "./supabase/server";
 import { DECISIONS } from "./decisions";
 import type { PaymentMethod } from "./types";
 
-// ---------------- Auth ----------------
+// ---------------- Auth (Supabase) ----------------
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") || "").trim();
   const password = String(formData.get("password") || "");
   const next = String(formData.get("next") || "/mis-turnos");
-  const user = findUserByEmail(email);
-  if (!user || user.password !== password) {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) {
     redirect(`/ingresar?error=cred&next=${encodeURIComponent(next)}`);
   }
-  await setSession(user.id);
-  redirect(user.role === "cliente" ? next : "/panel");
+  const user = await getSessionUser();
+  redirect(user && user.role === "cliente" ? next : "/panel");
 }
 
 export async function registerAction(formData: FormData) {
@@ -43,29 +43,34 @@ export async function registerAction(formData: FormData) {
   if (!email || !name || !phone || password.length < 4) {
     redirect(`/ingresar?tab=registro&error=campos&next=${encodeURIComponent(next)}`);
   }
-  if (findUserByEmail(email)) {
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: name, phone } },
+  });
+  if (error) {
     redirect(`/ingresar?tab=registro&error=existe&next=${encodeURIComponent(next)}`);
   }
-  const user = createUser({ email, name, phone, password });
-  await setSession(user.id);
-  redirect(next);
+  redirect(next); // confirmación de email desactivada → ya hay sesión
 }
 
 export async function logoutAction() {
-  await clearSession();
+  const supabase = await createClient();
+  await supabase.auth.signOut();
   redirect("/");
 }
 
-/** Guarda el avatar personalizado del cliente. */
+/** Guarda el avatar personalizado del usuario. */
 export async function guardarAvatarAction(formData: FormData) {
   const user = await getSessionUser();
   if (!user) redirect("/ingresar?next=/perfil");
   const url = String(formData.get("avatarUrl") || "");
   if (url.startsWith("https://api.dicebear.com/")) {
-    setUserAvatar(user.id, url);
+    await setUserAvatar(user.id, url);
     // Si es barbero, su avatar se usa también en su perfil público (dashboard, cola, etc.)
     if (user.role === "barbero" && user.barberId) {
-      updateBarber(user.barberId, { img: url });
+      await updateBarber(user.barberId, { img: url });
     }
   }
   revalidatePath("/perfil");
@@ -79,14 +84,14 @@ export async function crearReservaAction(formData: FormData) {
   const serviceId = String(formData.get("serviceId") || "");
   const barberId = String(formData.get("barberId") || "");
   const startISO = String(formData.get("startISO") || "");
-  const metodo = (String(formData.get("metodo") || "mercadopago") as PaymentMethod);
+  const metodo = String(formData.get("metodo") || "mercadopago") as PaymentMethod;
 
   const user = await getSessionUser();
   if (!user) redirect(`/ingresar?next=${encodeURIComponent("/reservar")}`);
 
   let apptId: string;
   try {
-    const appt = createHold({
+    const appt = await createHold({
       serviceId,
       barberId,
       startISO,
@@ -102,7 +107,7 @@ export async function crearReservaAction(formData: FormData) {
   }
 
   if (metodo === "efectivo") {
-    confirmDepositEfectivo(apptId); // confirma directo, seña a pagar en el local
+    await confirmDepositEfectivo(apptId); // confirma directo, seña a pagar en el local
     redirect(`/reservar/confirmacion/${apptId}`);
   }
   redirect(`/reservar/pago/${apptId}`);
@@ -112,7 +117,7 @@ export async function crearReservaAction(formData: FormData) {
 export async function pagarSeniaAction(formData: FormData) {
   const id = String(formData.get("id") || "");
   try {
-    payDepositMercadoPago(id);
+    await payDepositMercadoPago(id);
   } catch (e) {
     redirect(`/reservar/pago/${id}?error=${encodeURIComponent((e as Error).message)}`);
   }
@@ -123,11 +128,11 @@ export async function pagarSeniaAction(formData: FormData) {
 export async function cancelarTurnoAction(formData: FormData) {
   const id = String(formData.get("id") || "");
   const user = await getSessionUser();
-  const appt = getAppointment(id);
+  const appt = await getAppointment(id);
   if (!user || !appt || appt.customerId !== user.id) redirect("/mis-turnos");
   const horas = (Date.parse(appt.start) - Date.now()) / 3_600_000;
   if (horas < DECISIONS.cancelWindowHours) redirect("/mis-turnos?error=tarde");
-  cancelAppointment(id);
+  await cancelAppointment(id);
   revalidatePath("/mis-turnos");
 }
 
@@ -137,7 +142,7 @@ export async function panelSetStatusAction(formData: FormData) {
   if (!staff) redirect("/panel/ingresar");
   const id = String(formData.get("id") || "");
   const status = String(formData.get("status") || "") as "completada" | "no_show" | "cancelada";
-  setAppointmentStatus(id, status);
+  await setAppointmentStatus(id, status);
   revalidatePath("/panel");
   revalidatePath("/panel/turnos");
   revalidatePath("/panel/cola");
@@ -146,7 +151,7 @@ export async function panelSetStatusAction(formData: FormData) {
 /** Cola: sentar al cliente en el sillón (en curso). */
 export async function empezarTurnoAction(formData: FormData) {
   if (!(await requireStaff())) redirect("/panel/ingresar");
-  setAppointmentStatus(String(formData.get("id") || ""), "en_curso");
+  await setAppointmentStatus(String(formData.get("id") || ""), "en_curso");
   revalidatePath("/panel/cola");
   revalidatePath("/panel/turnos");
 }
@@ -156,11 +161,11 @@ export async function terminarTurnoAction(formData: FormData) {
   if (!(await requireStaff())) redirect("/panel/ingresar");
   const id = String(formData.get("id") || "");
   const method = String(formData.get("method") || "");
-  const appt = getAppointment(id);
+  const appt = await getAppointment(id);
   if (appt && appt.balanceStatus === "pendiente" && (method === "efectivo" || method === "mercadopago")) {
-    registrarSaldo(id, method as PaymentMethod);
+    await registrarSaldo(id, method as PaymentMethod);
   }
-  setAppointmentStatus(id, "completada");
+  await setAppointmentStatus(id, "completada");
   revalidatePath("/panel/cola");
   revalidatePath("/panel/turnos");
   revalidatePath("/panel");
@@ -169,7 +174,7 @@ export async function terminarTurnoAction(formData: FormData) {
 /** Cola: marcar que el cliente no vino (no-show). */
 export async function noShowTurnoAction(formData: FormData) {
   if (!(await requireStaff())) redirect("/panel/ingresar");
-  setAppointmentStatus(String(formData.get("id") || ""), "no_show");
+  await setAppointmentStatus(String(formData.get("id") || ""), "no_show");
   revalidatePath("/panel/cola");
   revalidatePath("/panel/turnos");
 }
@@ -178,7 +183,7 @@ export async function noShowTurnoAction(formData: FormData) {
 export async function registrarSenaEfectivoAction(formData: FormData) {
   const staff = await requireStaff();
   if (!staff) redirect("/panel/ingresar");
-  registrarSenaEfectivo(String(formData.get("id") || ""));
+  await registrarSenaEfectivo(String(formData.get("id") || ""));
   revalidatePath("/panel/turnos");
   revalidatePath("/panel");
 }
@@ -189,7 +194,7 @@ export async function registrarSaldoAction(formData: FormData) {
   if (!staff) redirect("/panel/ingresar");
   const id = String(formData.get("id") || "");
   const method = String(formData.get("method") || "efectivo") as PaymentMethod;
-  registrarSaldo(id, method);
+  await registrarSaldo(id, method);
   revalidatePath("/panel/turnos");
   revalidatePath("/panel");
 }

@@ -19,9 +19,9 @@ function gcalDate(iso: string): string {
 export default async function ConfirmacionPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getSessionUser();
-  const appt = getAppointment(id);
-  const service = appt ? getService(appt.serviceId) : undefined;
-  const barber = appt ? getBarber(appt.barberId) : undefined;
+  const appt = await getAppointment(id);
+  const service = appt ? await getService(appt.serviceId) : undefined;
+  const barber = appt ? await getBarber(appt.barberId) : undefined;
   const ok = appt && appt.status === "confirmada" && service && barber;
 
   const gcal = ok

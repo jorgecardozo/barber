@@ -22,7 +22,7 @@ export default async function ReservarPage({
   // El cliente tiene que estar logueado ANTES de reservar.
   if (!user) redirect("/ingresar?next=/reservar");
 
-  const services = listServices().map((s) => ({
+  const services = (await listServices()).map((s) => ({
     id: s.id,
     name: s.name,
     description: s.description,
@@ -33,7 +33,7 @@ export default async function ReservarPage({
   }));
 
   // mapa serviceId -> barberos que lo ofrecen
-  const barbers = listBarbers().map((b) => ({
+  const barbers = (await listBarbers()).map((b) => ({
     id: b.id,
     name: b.name,
     specialty: b.specialty,

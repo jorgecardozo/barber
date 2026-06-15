@@ -2,32 +2,35 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import {
   createBarber,
   createService,
-  createUser,
   createWalkIn,
   deleteService,
-  findUserByEmail,
   getBarber,
-  registerBarber,
   setBarberActive,
   setWorkingHours,
   updateBarber,
   updateService,
 } from "./store";
-import { getSessionUser, requireAdmin, requireStaff, setSession } from "./auth";
+import { requireAdmin, requireStaff } from "./auth";
+import { createClient } from "./supabase/server";
+import { supabaseAdmin } from "./supabase/admin";
 import type { PaymentMethod, WorkingHours } from "./types";
 
-// ---------------- Auth: Google (simulado) + registro barbero ----------------
+// ---------------- Auth: Google (OAuth) + registro barbero ----------------
 export async function loginGoogleAction(formData: FormData) {
   const next = String(formData.get("next") || "/mis-turnos");
-  // SIMULADO: en prod esto es OAuth real de Google vía Supabase Auth.
-  const email = "google.demo@gmail.com";
-  let user = findUserByEmail(email);
-  if (!user) user = createUser({ email, name: "Usuario Google", phone: "5492990000000", password: "google-oauth" });
-  await setSession(user.id);
-  redirect(next);
+  const supabase = await createClient();
+  const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://127.0.0.1:3000";
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: `${origin}/auth/callback?next=${encodeURIComponent(next)}` },
+  });
+  // Requiere configurar el proveedor Google en Supabase + un route handler /auth/callback.
+  if (error || !data?.url) redirect(`/ingresar?error=google`);
+  redirect(data.url);
 }
 
 export async function registerBarberAction(formData: FormData) {
@@ -38,18 +41,25 @@ export async function registerBarberAction(formData: FormData) {
   if (!email || !name || !phone || password.length < 4) {
     redirect(`/ingresar?tab=barbero&error=campos`);
   }
-  if (findUserByEmail(email)) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: name, phone } },
+  });
+  if (error || !data.user) {
     redirect(`/ingresar?tab=barbero&error=existe`);
   }
-  const { user } = registerBarber({ email, name, phone, password });
-  await setSession(user.id);
+  // Promover a barbero (service_role) + crear su perfil de barbero INACTIVO.
+  await supabaseAdmin.from("profiles").update({ role: "barbero", full_name: name, phone }).eq("id", data.user.id);
+  await createBarber({ name, specialty: "Barbería", active: false, userId: data.user.id });
   redirect("/panel"); // mostrará "pendiente de activación"
 }
 
 // ---------------- Alta de turno por staff (walk-in) ----------------
 export async function crearTurnoWalkInAction(formData: FormData) {
   if (!(await requireStaff())) redirect("/panel/ingresar");
-  createWalkIn({
+  await createWalkIn({
     serviceId: String(formData.get("serviceId") || ""),
     barberId: String(formData.get("barberId") || ""),
     startISO: String(formData.get("startISO") || ""),
@@ -69,7 +79,7 @@ function parsePrice(v: FormDataEntryValue | null): number {
 
 export async function createServiceAction(formData: FormData) {
   if (!(await requireStaff())) redirect("/panel/ingresar");
-  createService({
+  await createService({
     name: String(formData.get("name") || "").trim(),
     description: String(formData.get("description") || "").trim(),
     priceCents: parsePrice(formData.get("price")),
@@ -81,7 +91,7 @@ export async function createServiceAction(formData: FormData) {
 
 export async function updateServiceAction(formData: FormData) {
   if (!(await requireStaff())) redirect("/panel/ingresar");
-  updateService(String(formData.get("id") || ""), {
+  await updateService(String(formData.get("id") || ""), {
     name: String(formData.get("name") || "").trim(),
     description: String(formData.get("description") || "").trim(),
     priceCents: parsePrice(formData.get("price")),
@@ -93,14 +103,14 @@ export async function updateServiceAction(formData: FormData) {
 
 export async function deleteServiceAction(formData: FormData) {
   if (!(await requireAdmin())) redirect("/panel");
-  deleteService(String(formData.get("id") || ""));
+  await deleteService(String(formData.get("id") || ""));
   revalidatePath("/panel/servicios");
 }
 
 // ---------------- ABM Barberos (admin) ----------------
 export async function createBarberAction(formData: FormData) {
   if (!(await requireAdmin())) redirect("/panel");
-  createBarber({
+  await createBarber({
     name: String(formData.get("name") || "").trim(),
     specialty: String(formData.get("specialty") || "").trim(),
     active: formData.get("active") === "on",
@@ -110,7 +120,7 @@ export async function createBarberAction(formData: FormData) {
 
 export async function setBarberActiveAction(formData: FormData) {
   if (!(await requireAdmin())) redirect("/panel");
-  setBarberActive(String(formData.get("id") || ""), formData.get("active") === "true");
+  await setBarberActive(String(formData.get("id") || ""), formData.get("active") === "true");
   revalidatePath("/panel/barberos");
   revalidatePath("/panel");
 }
@@ -119,11 +129,11 @@ export async function updateBarberAction(formData: FormData) {
   const staff = await requireStaff();
   if (!staff) redirect("/panel/ingresar");
   const id = String(formData.get("id") || "");
-  const b = getBarber(id);
+  const b = await getBarber(id);
   if (!b) redirect("/panel/barberos");
   // barbero solo edita su propio perfil
   if (staff.role === "barbero" && b.userId !== staff.id) redirect("/panel");
-  updateBarber(id, {
+  await updateBarber(id, {
     name: String(formData.get("name") || b.name).trim(),
     specialty: String(formData.get("specialty") || b.specialty).trim(),
   });
@@ -135,7 +145,7 @@ export async function setWorkingHoursAction(formData: FormData) {
   const staff = await requireStaff();
   if (!staff) redirect("/panel/ingresar");
   const barberId = String(formData.get("barberId") || "");
-  const b = getBarber(barberId);
+  const b = await getBarber(barberId);
   if (!b) redirect("/panel/horarios");
   if (staff.role === "barbero" && b.userId !== staff.id) redirect("/panel");
 
@@ -155,6 +165,6 @@ export async function setWorkingHoursAction(formData: FormData) {
       breakEnd: breakEnd || undefined,
     });
   }
-  setWorkingHours(barberId, hours);
+  await setWorkingHours(barberId, hours);
   revalidatePath("/panel/horarios");
 }

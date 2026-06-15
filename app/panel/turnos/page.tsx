@@ -4,7 +4,7 @@ import { PanelHeader } from "@/components/panel/PanelHeader";
 import { TurnosTable, type TurnoRow } from "@/components/panel/TurnosTable";
 import { WalkInDialog } from "@/components/panel/WalkInDialog";
 import { requireStaff } from "@/lib/auth";
-import { expireHolds, getBarber, getService, listAllAppointments, listBarbers, listServices } from "@/lib/store";
+import { expireHolds, listAllAppointments, listBarbers, listServices } from "@/lib/store";
 import { depositForPrice } from "@/lib/decisions";
 import { horizonDates } from "@/lib/availability";
 import { fmtDateLong, fmtDateShort, fmtTime, todayAR } from "@/lib/time";
@@ -15,9 +15,12 @@ export const dynamic = "force-dynamic";
 export default async function TurnosPage() {
   const staff = await requireStaff();
   if (!staff) redirect("/panel/ingresar");
-  expireHolds();
+  await expireHolds();
 
-  const all = listAllAppointments().filter((a) => staff.role === "admin" || a.barberId === staff.barberId);
+  const [allRaw, services, barbers] = await Promise.all([listAllAppointments(), listServices(), listBarbers()]);
+  const svcName = new Map(services.map((s) => [s.id, s.name]));
+  const barbName = new Map(barbers.map((b) => [b.id, b.name]));
+  const all = allRaw.filter((a) => staff.role === "admin" || a.barberId === staff.barberId);
 
   const rows: TurnoRow[] = all.map((a) => {
     const dateStr = a.start.slice(0, 10);
@@ -31,8 +34,8 @@ export default async function TurnosPage() {
       customerName: a.customerName,
       customerPhone: a.customerPhone,
       barberId: a.barberId,
-      barberName: getBarber(a.barberId)?.name ?? a.barberId,
-      serviceName: getService(a.serviceId)?.name ?? a.serviceId,
+      barberName: barbName.get(a.barberId) ?? a.barberId,
+      serviceName: svcName.get(a.serviceId) ?? a.serviceId,
       priceCents: a.priceCents,
       depositCents: a.depositCents,
       balanceCents: a.priceCents - a.depositCents,
@@ -46,18 +49,18 @@ export default async function TurnosPage() {
 
   const barbersFilter =
     staff.role === "admin"
-      ? listBarbers().map((b) => ({ id: b.id, name: b.name }))
-      : [{ id: staff.barberId!, name: getBarber(staff.barberId!)?.name ?? "Yo" }];
+      ? barbers.map((b) => ({ id: b.id, name: b.name }))
+      : [{ id: staff.barberId!, name: barbName.get(staff.barberId!) ?? "Yo" }];
 
   // Datos para el alta de turno (walk-in)
-  const wiServices = listServices().map((s) => ({
+  const wiServices = services.map((s) => ({
     id: s.id,
     name: s.name,
     priceCents: s.priceCents,
     durationMin: s.durationMin,
     depositCents: depositForPrice(s.priceCents),
   }));
-  const wiBarbers = listBarbers()
+  const wiBarbers = barbers
     .filter((b) => b.active && (staff.role === "admin" || b.id === staff.barberId))
     .map((b) => ({ id: b.id, name: b.name, serviceIds: b.serviceIds }));
   const wiDates = horizonDates().map((d) => ({ value: d, label: fmtDateLong(d) }));

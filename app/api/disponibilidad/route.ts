@@ -13,17 +13,17 @@ export async function GET(request: Request) {
   if (!barber || !service) {
     return NextResponse.json({ error: "faltan parámetros" }, { status: 400 });
   }
-  expireHolds(); // limpieza lazy (en prod = cron)
+  await expireHolds(); // limpieza lazy (en prod = cron)
 
   // Resumen del horizonte (cuántos libres por día) para el calendario
   if (searchParams.get("resumen")) {
-    return NextResponse.json({ dias: horizonAvailability(barber, service) });
+    return NextResponse.json({ dias: await horizonAvailability(barber, service) });
   }
 
   const date = searchParams.get("date");
   if (!date) return NextResponse.json({ error: "falta date" }, { status: 400 });
 
-  const grid = daySlotGrid(barber, service, date);
-  const slots = availableSlots(barber, service, date); // disponibles (compat walk-in)
+  const grid = await daySlotGrid(barber, service, date);
+  const slots = await availableSlots(barber, service, date); // disponibles (compat walk-in)
   return NextResponse.json({ slots, grid });
 }

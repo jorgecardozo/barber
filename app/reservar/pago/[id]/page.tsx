@@ -21,12 +21,12 @@ export default async function PagoPage({
   const { id } = await params;
   const { error } = await searchParams;
   const user = await getSessionUser();
-  const appt = getAppointment(id);
+  const appt = await getAppointment(id);
 
   if (appt && appt.status === "confirmada") redirect(`/reservar/confirmacion/${id}`);
 
-  const service = appt ? getService(appt.serviceId) : undefined;
-  const barber = appt ? getBarber(appt.barberId) : undefined;
+  const service = appt ? await getService(appt.serviceId) : undefined;
+  const barber = appt ? await getBarber(appt.barberId) : undefined;
   const expired = appt && appt.status !== "hold";
 
   return (

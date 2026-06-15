@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { PanelHeader } from "@/components/panel/PanelHeader";
 import { ColaView } from "@/components/panel/ColaView";
 import { requireStaff } from "@/lib/auth";
-import { appointmentsOnDate, getBarberByUserId, getService, getUser, listBarbers } from "@/lib/store";
+import { appointmentsOnDate, getBarberByUserId, getUser, listBarbers, listServices } from "@/lib/store";
 import { fmtTime, nowMs, todayAR } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Cola · Panel Flow Site" };
@@ -14,20 +14,37 @@ export default async function ColaPage() {
   if (!staff) redirect("/panel/ingresar");
 
   const single = staff.role === "barbero";
-  let barbersList = listBarbers().filter((b) => b.active);
+  let barbersList = (await listBarbers()).filter((b) => b.active);
   if (single) {
-    const me = getBarberByUserId(staff.id);
+    const me = await getBarberByUserId(staff.id);
     barbersList = me && me.active ? [me] : [];
   }
 
   const today = todayAR();
-  const appts = appointmentsOnDate(today);
+  const [appts, services] = await Promise.all([appointmentsOnDate(today), listServices()]);
+  const svcName = new Map(services.map((s) => [s.id, s.name]));
+
+  // Avatares (de barberos y clientes) en una sola pasada.
+  const ids = [
+    ...new Set([
+      ...barbersList.flatMap((b) => (b.userId ? [b.userId] : [])),
+      ...appts.flatMap((a) => (a.customerId ? [a.customerId] : [])),
+    ]),
+  ];
+  const avatarById = new Map<string, string>();
+  await Promise.all(
+    ids.map(async (id) => {
+      const u = await getUser(id);
+      if (u?.avatarUrl) avatarById.set(id, u.avatarUrl);
+    }),
+  );
+
   const data = barbersList.map((b) => ({
     id: b.id,
     name: b.name,
     img: b.img,
     barberAvatar:
-      (b.userId && getUser(b.userId)?.avatarUrl) ||
+      (b.userId && avatarById.get(b.userId)) ||
       `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(b.name)}&radius=50`,
     items: appts
       .filter((a) => a.barberId === b.id)
@@ -38,11 +55,11 @@ export default async function ColaPage() {
         time: fmtTime(new Date(a.start)),
         client: a.customerName,
         phone: a.customerPhone,
-        service: getService(a.serviceId)?.name ?? "",
+        service: svcName.get(a.serviceId) ?? "",
         status: a.status,
         balanceCents: a.priceCents - a.depositCents,
         balancePaid: a.balanceStatus === "pagado",
-        avatar: (a.customerId && getUser(a.customerId)?.avatarUrl) || undefined,
+        avatar: (a.customerId && avatarById.get(a.customerId)) || undefined,
       })),
   }));
 

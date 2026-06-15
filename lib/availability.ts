@@ -13,10 +13,10 @@ export interface Slot {
   startISO: string;
 }
 
-export function availableSlots(barberId: string, serviceId: string, dateStr: string): Slot[] {
-  const svc = getService(serviceId);
+export async function availableSlots(barberId: string, serviceId: string, dateStr: string): Promise<Slot[]> {
+  const svc = await getService(serviceId);
   if (!svc) return [];
-  const wh = workingHoursFor(barberId, weekdayOf(dateStr));
+  const wh = await workingHoursFor(barberId, weekdayOf(dateStr));
   if (!wh) return []; // día no laborable de ese barbero
 
   const openMin = hhmmToMin(wh.open);
@@ -30,7 +30,7 @@ export function availableSlots(barberId: string, serviceId: string, dateStr: str
   const leadMs = DECISIONS.leadTimeMinutes * 60_000;
   const now = nowMs();
 
-  const active = activeAppointmentsForBarber(barberId).map((a) => ({
+  const active = (await activeAppointmentsForBarber(barberId)).map((a) => ({
     s: Date.parse(a.start),
     e: Date.parse(a.end),
   }));
@@ -65,10 +65,10 @@ export interface DaySlot {
 }
 
 /** Grilla completa del día: muestra TODOS los slots, marcando ocupados vs libres. */
-export function daySlotGrid(barberId: string, serviceId: string, dateStr: string): DaySlot[] {
-  const svc = getService(serviceId);
+export async function daySlotGrid(barberId: string, serviceId: string, dateStr: string): Promise<DaySlot[]> {
+  const svc = await getService(serviceId);
   if (!svc) return [];
-  const wh = workingHoursFor(barberId, weekdayOf(dateStr));
+  const wh = await workingHoursFor(barberId, weekdayOf(dateStr));
   if (!wh) return [];
 
   const openMin = hhmmToMin(wh.open);
@@ -81,7 +81,7 @@ export function daySlotGrid(barberId: string, serviceId: string, dateStr: string
   const leadMs = DECISIONS.leadTimeMinutes * 60_000;
   const now = nowMs();
 
-  const active = activeAppointmentsForBarber(barberId).map((a) => ({ s: Date.parse(a.start), e: Date.parse(a.end) }));
+  const active = (await activeAppointmentsForBarber(barberId)).map((a) => ({ s: Date.parse(a.start), e: Date.parse(a.end) }));
   const grid: DaySlot[] = [];
   for (let m = openMin; m + dur <= closeMin; m += step) {
     const slotEndMin = m + dur;
@@ -97,15 +97,17 @@ export function daySlotGrid(barberId: string, serviceId: string, dateStr: string
 }
 
 /** Cantidad de horarios disponibles por día en el horizonte (para el calendario). */
-export function horizonAvailability(barberId: string, serviceId: string): { date: string; count: number }[] {
-  return horizonDates().map((d) => ({ date: d, count: availableSlots(barberId, serviceId, d).length }));
+export async function horizonAvailability(barberId: string, serviceId: string): Promise<{ date: string; count: number }[]> {
+  const dates = horizonDates();
+  const counts = await Promise.all(dates.map((d) => availableSlots(barberId, serviceId, d)));
+  return dates.map((date, i) => ({ date, count: counts[i].length }));
 }
 
 /** ¿Tiene el barbero al menos un slot disponible en el horizonte? */
-export function hasAvailabilityInHorizon(barberId: string, serviceId: string): boolean {
+export async function hasAvailabilityInHorizon(barberId: string, serviceId: string): Promise<boolean> {
   const start = todayAR();
   for (let i = 0; i <= DECISIONS.horizonDays; i++) {
-    if (availableSlots(barberId, serviceId, addDays(start, i)).length > 0) return true;
+    if ((await availableSlots(barberId, serviceId, addDays(start, i))).length > 0) return true;
   }
   return false;
 }

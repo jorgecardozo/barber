@@ -17,7 +17,16 @@ export const dynamic = "force-dynamic";
 export default async function BarberosPage() {
   const admin = await requireAdmin();
   if (!admin) redirect("/panel");
-  const barbers = listBarbers();
+  const barbers = await listBarbers();
+  const emails = new Map<string, string>();
+  await Promise.all(
+    barbers
+      .filter((b) => b.userId)
+      .map(async (b) => {
+        const u = await getUser(b.userId!);
+        if (u?.email) emails.set(b.id, u.email);
+      }),
+  );
   const pendientes = barbers.filter((b) => !b.active);
   const activos = barbers.filter((b) => b.active);
 
@@ -40,7 +49,7 @@ export default async function BarberosPage() {
             </h2>
             <div className="space-y-2">
               {pendientes.map((b) => (
-                <BarberRow key={b.id} b={b} email={b.userId ? getUser(b.userId)?.email : undefined} />
+                <BarberRow key={b.id} b={b} email={emails.get(b.id)} />
               ))}
             </div>
           </section>
@@ -50,7 +59,7 @@ export default async function BarberosPage() {
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-flow-cyan">Activos ({activos.length})</h2>
           <div className="space-y-2">
             {activos.map((b) => (
-              <BarberRow key={b.id} b={b} email={b.userId ? getUser(b.userId)?.email : undefined} />
+              <BarberRow key={b.id} b={b} email={emails.get(b.id)} />
             ))}
           </div>
         </section>

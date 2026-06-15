@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function ServiciosPage() {
   const staff = await requireStaff();
   if (!staff) redirect("/panel/ingresar");
-  const services = listServices();
+  const services = await listServices();
   const isAdmin = staff.role === "admin";
 
   return (

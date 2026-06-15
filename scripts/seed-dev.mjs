@@ -79,11 +79,11 @@ const atAR = (h, min = 0) => new Date(Date.UTC(y, m, d, h + 3, min)).toISOString
 await db.from("appointments").delete().eq("barber_id", lucio.id).gte("starts_at", atAR(0)).lte("starts_at", atAR(23, 59));
 
 const plan = [
-  { slug: "corte-clasico", h: 10, status: "completada", balancePaid: true },
-  { slug: "corte-barba", h: 11, status: "en_curso", balancePaid: false },
-  { slug: "diseno-lineas", h: 15, status: "confirmada", balancePaid: false },
-  { slug: "corte-ninos", h: 16, status: "confirmada", balancePaid: false },
-  { slug: "degradado-fade", h: 17, status: "confirmada", balancePaid: false },
+  { slug: "corte-clasico", h: 10, status: "completada", balancePaid: true, client: "Tomás G." },
+  { slug: "corte-barba", h: 11, status: "en_curso", balancePaid: false, client: "Nico R." },
+  { slug: "diseno-lineas", h: 15, status: "confirmada", balancePaid: false, client: "Joaco P." },
+  { slug: "corte-ninos", h: 16, status: "confirmada", balancePaid: false, client: "Benja S." },
+  { slug: "degradado-fade", h: 17, status: "confirmada", balancePaid: false, client: "Lautaro M." },
 ];
 
 let nApt = 0, nPay = 0;
@@ -96,6 +96,8 @@ for (const p of plan) {
     .from("appointments")
     .insert({
       customer_id: customerId,
+      customer_name_snapshot: p.client,
+      customer_phone_snapshot: "549299555" + (1300 + p.h),
       barber_id: lucio.id,
       service_id: s.id,
       service_name_snapshot: s.name,

@@ -25,11 +25,11 @@ export const dynamic = "force-dynamic";
 export default async function PanelPage() {
   const staff = await requireStaff();
   if (!staff) redirect("/panel/ingresar");
-  expireHolds();
+  await expireHolds();
 
   // Barbero pendiente de activación
   if (staff.role === "barbero") {
-    const me = getBarberByUserId(staff.id);
+    const me = await getBarberByUserId(staff.id);
     if (!me || !me.active) {
       return (
         <>
@@ -48,16 +48,22 @@ export default async function PanelPage() {
   }
 
   const scope = (barberId: string) => staff.role === "admin" || barberId === staff.barberId;
-  const payments = listPayments().filter((p) => scope(p.barberId));
-  const appts = listAllAppointments().filter((a) => scope(a.barberId));
-  const barbers = (staff.role === "admin" ? listBarbers() : listBarbers().filter((b) => b.id === staff.barberId)).filter((b) => b.active);
+  const [paymentsAll, apptsAll, barbersAll, upcomingAll] = await Promise.all([
+    listPayments(),
+    listAllAppointments(),
+    listBarbers(),
+    allUpcomingAppointments(),
+  ]);
+  const payments = paymentsAll.filter((p) => scope(p.barberId));
+  const appts = apptsAll.filter((a) => scope(a.barberId));
+  const barbers = barbersAll.filter((b) => b.active && (staff.role === "admin" || b.id === staff.barberId));
 
   const ingresosTotales = payments.reduce((s, p) => s + p.amountCents, 0);
   const mp = payments.filter((p) => p.method === "mercadopago").reduce((s, p) => s + p.amountCents, 0);
   const efectivo = payments.filter((p) => p.method === "efectivo").reduce((s, p) => s + p.amountCents, 0);
   const cortes = appts.filter((a) => a.status === "completada").length;
   const clientes = new Set(appts.filter((a) => a.status === "completada" || a.status === "confirmada").map((a) => a.customerName)).size;
-  const proximos = allUpcomingAppointments().filter((a) => scope(a.barberId)).length;
+  const proximos = upcomingAll.filter((a) => scope(a.barberId)).length;
 
   const porBarbero = barbers.map((b) => ({
     id: b.id,

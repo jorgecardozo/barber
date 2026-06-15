@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { AppHeader } from "@/components/AppHeader";
 import { StatusBadge } from "@/components/StatusBadge";
 import { getSessionUser } from "@/lib/auth";
-import { appointmentsForCustomer, getBarber, getService } from "@/lib/store";
+import { appointmentsForCustomer, listBarbers, listServices } from "@/lib/store";
 import { cancelarTurnoAction } from "@/lib/actions";
 import { DECISIONS } from "@/lib/decisions";
 import { formatARS } from "@/lib/money";
@@ -22,7 +22,13 @@ export default async function MisTurnosPage({
   const user = await getSessionUser();
   if (!user) redirect("/ingresar?next=/mis-turnos");
 
-  const turnos = appointmentsForCustomer(user.id);
+  const [turnos, services, barbers] = await Promise.all([
+    appointmentsForCustomer(user.id),
+    listServices(),
+    listBarbers(),
+  ]);
+  const svcById = new Map(services.map((s) => [s.id, s]));
+  const barbById = new Map(barbers.map((b) => [b.id, b]));
   const now = Date.now();
 
   return (
@@ -58,8 +64,8 @@ export default async function MisTurnosPage({
           ) : (
             <ul className="space-y-3">
               {turnos.map((t) => {
-                const service = getService(t.serviceId);
-                const barber = getBarber(t.barberId);
+                const service = svcById.get(t.serviceId);
+                const barber = barbById.get(t.barberId);
                 const horas = (Date.parse(t.start) - now) / 3_600_000;
                 const cancelable =
                   (t.status === "confirmada" || t.status === "hold") && horas >= DECISIONS.cancelWindowHours;

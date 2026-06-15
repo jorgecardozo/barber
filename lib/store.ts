@@ -1,386 +1,289 @@
 /**
- * BACKEND SIMULADO — store en memoria con datos sembrados.
+ * CAPA DE DATOS — Supabase (Postgres) vía service_role (server-only).
  *
- * ⚠️ Reemplaza temporalmente a Supabase para que la app CORRA sin credenciales.
- * La lógica anti-doble-reserva acá está en código; en producción la hace la
- * base de datos con un EXCLUDE constraint (ver supabase/migrations).
- * El estado vive en globalThis para sobrevivir el hot-reload de Next en dev.
+ * Reemplaza al store en memoria. Cada función mapea filas del esquema
+ * (supabase/migrations) a los tipos de la app (lib/types.ts), así el resto de
+ * la app no cambia. La autorización la imponen las server actions
+ * (requireStaff / getSessionUser) antes de llamar acá; la RLS protege la API
+ * pública. El anti-doble-reserva lo hace la DB (EXCLUDE no_double_booking):
+ * un insert que solapa devuelve 23P01 → lo traducimos a SlotTakenError.
  */
-import { DECISIONS, depositForPrice } from "./decisions";
-import { arDateTime, addDays, hhmmToMin, minToHHMM, nowMs, todayAR, weekdayOf } from "./time";
-import type {
-  Appointment,
-  Barber,
-  Payment,
-  PaymentMethod,
-  Service,
-  User,
-  WorkingHours,
-} from "./types";
+import { supabaseAdmin as sb } from "./supabase/admin";
+import { depositForPrice } from "./decisions";
+import { hhmmToMin, minToHHMM, nowMs } from "./time";
+import type { Appointment, Barber, Payment, PaymentMethod, Service, User, WorkingHours } from "./types";
 
-// ---------- Catálogo ----------
-const SERVICES: Service[] = [
-  { id: "corte", name: "Corte clásico", description: "Corte a máquina y tijera, terminación prolija.", priceCents: 600_000, durationMin: 30, depositPct: 40 },
-  { id: "corte-barba", name: "Corte + Barba", description: "El combo completo: corte, perfilado y arreglo de barba.", priceCents: 850_000, durationMin: 45, depositPct: 40, featured: true },
-  { id: "fade", name: "Degradado (Fade)", description: "Degradado a piel con diseño y definición.", priceCents: 700_000, durationMin: 40, depositPct: 40 },
-  { id: "color", name: "Color / Platinado", description: "Decoloración y color al tono que quieras.", priceCents: 1_500_000, durationMin: 90, depositPct: 40 },
-  { id: "diseno", name: "Diseño / Líneas", description: "Líneas y diseños freestyle a navaja.", priceCents: 200_000, durationMin: 15, depositPct: 40 },
-  { id: "ninos", name: "Corte niños", description: "Para los más chicos, con paciencia y flow.", priceCents: 500_000, durationMin: 30, depositPct: 40 },
-];
-const ALL_SERVICE_IDS = SERVICES.map((s) => s.id);
+// estados que "ocupan" agenda (mismo conjunto que el EXCLUDE / slots_publicos + en_curso)
+const OCCUPYING = ["hold", "confirmada", "en_curso", "completada", "no_show"] as const;
 
-const BARBER_DEFS = [
-  { id: "gavazz", name: "Gavazz", role: "Co-founder & Barbero", specialty: "Fades & diseños", active: true, userId: "u-gavazz", off: 0 },
-  { id: "thiago", name: "Thiago", role: "Barbero", specialty: "Clásicos & barba", active: true, off: 1 },
-  { id: "lucio", name: "Lucio", role: "Barbero", specialty: "Color & platinados", active: true, off: 2, userId: "u-barbero-demo" },
-  { id: "brian", name: "Brian", role: "Barbero", specialty: "Degradados a piel", active: true, off: 3 },
-  { id: "mati", name: "Mati", role: "Barbero", specialty: "Barba & ritual", active: true, off: 0 },
-  { id: "nacho", name: "Nacho", role: "Barbero", specialty: "Cortes urbanos", active: true, off: 1 },
-  { id: "lautaro", name: "Lautaro", role: "Barbero", specialty: "Diseños freestyle", active: true, off: 2 },
-  { id: "fran", name: "Fran", role: "Barbero", specialty: "Clásicos & color", active: true, off: 4 },
-  { id: "tobias", name: "Tobías", role: "Barbero", specialty: "Platinados", active: true, off: 3 },
-  { id: "ramiro", name: "Ramiro", role: "Barbero", specialty: "Fades", active: false, userId: "u-ramiro", off: 0 },
-] as const;
-const BARBER_IMGS = ["/barbers/br1.jpg", "/barbers/br2.jpg", "/barbers/br3.jpg"];
+// ---------- mapeos fila → tipo de la app ----------
+type Row = Record<string, unknown>;
 
-const BARBERS: Barber[] = BARBER_DEFS.map((d, i) => ({
-  id: d.id,
-  name: d.name,
-  role: d.role,
-  specialty: d.specialty,
-  img: BARBER_IMGS[i % BARBER_IMGS.length],
-  serviceIds: ALL_SERVICE_IDS,
-  active: d.active,
-  userId: "userId" in d ? d.userId : undefined,
-}));
-
-// Abierto 10–20 con corte 13–14; cada barbero descansa un día.
-const WORKING_HOURS: WorkingHours[] = BARBER_DEFS.flatMap((d) =>
-  [0, 1, 2, 3, 4, 5, 6]
-    .filter((wd) => wd !== d.off)
-    .map((wd) => ({ barberId: d.id, weekday: wd, open: "10:00", close: "20:00", breakStart: "13:00", breakEnd: "14:00" })),
-);
-
-const SEED_USERS: User[] = [
-  { id: "u-admin", email: "admin@flowsite.com", name: "Admin Flow", phone: "5492995550000", password: "admin123", role: "admin" },
-  { id: "u-gavazz", email: "gavazz@flowsite.com", name: "Gavazz", phone: "5492995550001", password: "barber123", role: "barbero", barberId: "gavazz" },
-  { id: "u-barbero-demo", email: "barbero@demo.com", name: "Lucio", phone: "5492995550002", password: "barbero123", role: "barbero", barberId: "lucio" },
-  { id: "u-ramiro", email: "ramiro@flowsite.com", name: "Ramiro", phone: "5492995550009", password: "barber123", role: "barbero", barberId: "ramiro" },
-  { id: "u-cliente", email: "cliente@demo.com", name: "Cliente Demo", phone: "5492995551234", password: "cliente123", role: "cliente" },
-];
-
-// ---------- Seed de turnos + pagos (para que el dashboard tenga números) ----------
-const CLIENT_NAMES = [
-  "Juan P.", "Brian M.", "Nico G.", "Lucas D.", "Fran T.", "Maxi A.", "Tomi V.",
-  "Dilan F.", "Joaco P.", "Agus L.", "Ema S.", "Santi B.", "Thiago R.", "Ciro M.",
-  "Benja S.", "Galo R.", "Lautaro P.", "Bauti G.", "Mateo R.", "Valentino A.",
-  "Renzo C.", "Gael M.", "Dante R.", "Facu L.", "Joel V.", "Kevin A.", "Axel P.",
-  "Bruno S.", "Iván D.", "Tiziano R.",
-];
-
-// PRNG determinístico (sin Math.random) → el mock es estable entre reinicios.
-function mulberry32(seed: number) {
-  return function () {
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+function mapService(r: Row): Service {
+  return {
+    id: r.id as string,
+    name: r.name as string,
+    description: (r.description as string) ?? "",
+    priceCents: r.price_cents as number,
+    durationMin: r.duration_min as number,
+    depositPct: r.deposit_pct as number,
+    featured: (r.is_featured as boolean) || undefined,
   };
 }
 
-/** Genera ~120 turnos repartidos en ~6 semanas para tener data de prueba. */
-function buildSeed(): { appointments: Appointment[]; payments: Payment[] } {
-  const appointments: Appointment[] = [];
-  const payments: Payment[] = [];
-  const rand = mulberry32(20260614);
-  const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(rand() * arr.length)];
-  const activeBarbers = BARBERS.filter((b) => b.active);
-  let aSeq = 0;
-  let pSeq = 0;
-
-  for (let day = -28; day <= 12; day++) {
-    if (day === 0) continue; // hoy se rellena aparte (cola realista)
-    const date = addDays(todayAR(), day);
-    const wd = weekdayOf(date);
-    for (const b of activeBarbers) {
-      const wh = WORKING_HOURS.find((w) => w.barberId === b.id && w.weekday === wd);
-      if (!wh) continue;
-      const count = Math.floor(rand() * 1.8); // 0..1 por barbero/día
-      const used: [number, number][] = [];
-      const openMin = hhmmToMin(wh.open);
-      const closeMin = hhmmToMin(wh.close);
-      const bs = wh.breakStart ? hhmmToMin(wh.breakStart) : -1;
-      const be = wh.breakEnd ? hhmmToMin(wh.breakEnd) : -1;
-
-      for (let k = 0; k < count; k++) {
-        const svc = pick(SERVICES);
-        const maxSlots = Math.floor((closeMin - openMin - svc.durationMin) / 15);
-        if (maxSlots <= 0) continue;
-        let placed = false;
-        for (let attempt = 0; attempt < 6 && !placed; attempt++) {
-          const startMin = openMin + Math.floor(rand() * maxSlots) * 15;
-          const endMin = startMin + svc.durationMin;
-          if (bs >= 0 && startMin < be && endMin > bs) continue; // corte mediodía
-          if (used.some(([s, e]) => startMin < e + 5 && s - 5 < endMin)) continue;
-          used.push([startMin, endMin]);
-          placed = true;
-
-          const start = arDateTime(date, minToHHMM(startMin));
-          const end = new Date(start.getTime() + svc.durationMin * 60_000);
-          const depositCents = depositForPrice(svc.priceCents);
-
-          let status: Appointment["status"];
-          if (day < 0) {
-            const r = rand();
-            status = r < 0.82 ? "completada" : r < 0.92 ? "no_show" : "cancelada";
-          } else {
-            status = "confirmada";
-          }
-          const completed = status === "completada";
-          const senaMethod: PaymentMethod = rand() < 0.55 ? "mercadopago" : "efectivo";
-          const senaPaid = status !== "cancelada" && (status !== "confirmada" || rand() < 0.85);
-          const saldoMethod: PaymentMethod = rand() < 0.45 ? "mercadopago" : "efectivo";
-
-          aSeq++;
-          const appt: Appointment = {
-            id: `seed-${String(aSeq).padStart(4, "0")}`,
-            serviceId: svc.id,
-            barberId: b.id,
-            customerId: null,
-            customerName: pick(CLIENT_NAMES),
-            customerPhone: "54929955" + String(51000 + aSeq),
-            start: start.toISOString(),
-            end: end.toISOString(),
-            status,
-            priceCents: svc.priceCents,
-            depositCents,
-            holdExpiresAt: null,
-            depositMethod: senaPaid ? senaMethod : status === "confirmada" ? "efectivo" : senaMethod,
-            depositStatus: senaPaid ? "pagado" : "pendiente",
-            balanceMethod: completed ? saldoMethod : null,
-            balanceStatus: completed ? "pagado" : "pendiente",
-            createdAt: start.toISOString(),
-          };
-          appointments.push(appt);
-          if (senaPaid) {
-            pSeq++;
-            payments.push({ id: `pseed-${pSeq}`, appointmentId: appt.id, barberId: b.id, kind: "sena", method: senaMethod, amountCents: depositCents, createdAt: start.toISOString() });
-          }
-          if (completed) {
-            pSeq++;
-            payments.push({ id: `pseed-${pSeq}`, appointmentId: appt.id, barberId: b.id, kind: "saldo", method: saldoMethod, amountCents: svc.priceCents - depositCents, createdAt: end.toISOString() });
-          }
-        }
-      }
-    }
-  }
-  // ----- Relleno de HOY: ~7 turnos por barbero para una cola bien realista -----
-  const todayDate = todayAR();
-  const todayWd = weekdayOf(todayDate);
-  const todayTimes = ["10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"];
-  const fillServices = SERVICES.filter((s) => s.durationMin <= 30);
-  for (const b of activeBarbers) {
-    const wh = WORKING_HOURS.find((w) => w.barberId === b.id && w.weekday === todayWd);
-    if (!wh) continue;
-    let kept = 0;
-    for (const hhmm of todayTimes) {
-      if (rand() < 0.06) continue; // ~17-18 por barbero, con leve variación
-      const svc = fillServices[Math.floor(rand() * fillServices.length)];
-      const start = arDateTime(todayDate, hhmm);
-      const end = new Date(start.getTime() + svc.durationMin * 60_000);
-      const depositCents = depositForPrice(svc.priceCents);
-      const senaMethod: PaymentMethod = rand() < 0.55 ? "mercadopago" : "efectivo";
-      // 0 = ya atendido, 1 = en el sillón ahora, resto = en espera
-      const status: Appointment["status"] = kept === 0 ? "completada" : kept === 1 ? "en_curso" : "confirmada";
-      const completed = status === "completada";
-      const saldoMethod: PaymentMethod = rand() < 0.45 ? "mercadopago" : "efectivo";
-      kept++;
-      aSeq++;
-      const appt: Appointment = {
-        id: `seed-${String(aSeq).padStart(4, "0")}`,
-        serviceId: svc.id,
-        barberId: b.id,
-        customerId: null,
-        customerName: CLIENT_NAMES[Math.floor(rand() * CLIENT_NAMES.length)],
-        customerPhone: "54929955" + String(51000 + aSeq),
-        start: start.toISOString(),
-        end: end.toISOString(),
-        status,
-        priceCents: svc.priceCents,
-        depositCents,
-        holdExpiresAt: null,
-        depositMethod: senaMethod,
-        depositStatus: "pagado",
-        balanceMethod: completed ? saldoMethod : null,
-        balanceStatus: completed ? "pagado" : "pendiente",
-        createdAt: start.toISOString(),
-      };
-      appointments.push(appt);
-      pSeq++;
-      payments.push({ id: `pseed-${pSeq}`, appointmentId: appt.id, barberId: b.id, kind: "sena", method: senaMethod, amountCents: depositCents, createdAt: start.toISOString() });
-      if (completed) {
-        pSeq++;
-        payments.push({ id: `pseed-${pSeq}`, appointmentId: appt.id, barberId: b.id, kind: "saldo", method: saldoMethod, amountCents: svc.priceCents - depositCents, createdAt: end.toISOString() });
-      }
-    }
-  }
-
-  return { appointments, payments };
-}
-
-// ---------- Store singleton ----------
-interface DB {
-  services: Service[];
-  barbers: Barber[];
-  workingHours: WorkingHours[];
-  appointments: Appointment[];
-  payments: Payment[];
-  users: User[];
-  seq: number;
-}
-const g = globalThis as unknown as { __flowDB?: DB };
-function db(): DB {
-  if (!g.__flowDB) {
-    const seed = buildSeed();
-    g.__flowDB = {
-      services: SERVICES,
-      barbers: BARBERS,
-      workingHours: WORKING_HOURS,
-      appointments: seed.appointments,
-      payments: seed.payments,
-      users: SEED_USERS,
-      seq: 1,
-    };
-  }
-  return g.__flowDB;
-}
-function nextId(prefix: string): string {
-  const d = db();
-  d.seq += 1;
-  return `${prefix}-${d.seq}-${Math.floor(Math.random() * 1e6)}`;
-}
-
-// ---------- Catálogo (lecturas) ----------
-export function listServices(): Service[] {
-  return db().services;
-}
-export function getService(id: string): Service | undefined {
-  return db().services.find((s) => s.id === id);
-}
-export function listBarbers(): Barber[] {
-  return db().barbers;
-}
-export function getBarber(id: string): Barber | undefined {
-  return db().barbers.find((b) => b.id === id);
-}
-/** Solo barberos ACTIVOS ofrecen turnos. */
-export function barbersForService(serviceId: string): Barber[] {
-  return db().barbers.filter((b) => b.active && b.serviceIds.includes(serviceId));
-}
-export function getBarberByUserId(userId: string): Barber | undefined {
-  return db().barbers.find((b) => b.userId === userId);
-}
-export function workingHoursFor(barberId: string, weekday: number): WorkingHours | undefined {
-  return db().workingHours.find((w) => w.barberId === barberId && w.weekday === weekday);
-}
-export function workingHoursForBarber(barberId: string): WorkingHours[] {
-  return db().workingHours.filter((w) => w.barberId === barberId);
-}
-
-// ---------- ABM: servicios ----------
-export function createService(input: Omit<Service, "id">): Service {
-  const slug = input.name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const svc: Service = { ...input, id: slug || nextId("svc") };
-  db().services.push(svc);
-  // todos los barberos pueden ofrecerlo por defecto
-  for (const b of db().barbers) if (!b.serviceIds.includes(svc.id)) b.serviceIds.push(svc.id);
-  return svc;
-}
-export function updateService(id: string, patch: Partial<Omit<Service, "id">>): Service {
-  const svc = getService(id);
-  if (!svc) throw new Error("Servicio inexistente");
-  Object.assign(svc, patch);
-  return svc;
-}
-export function deleteService(id: string): void {
-  const d = db();
-  d.services = d.services.filter((s) => s.id !== id);
-  for (const b of d.barbers) b.serviceIds = b.serviceIds.filter((s) => s !== id);
-}
-
-// ---------- ABM: barberos ----------
-export function createBarber(input: { name: string; specialty: string; img?: string; active?: boolean; userId?: string; role?: string }): Barber {
-  const slug = input.name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const barber: Barber = {
-    id: db().barbers.some((b) => b.id === slug) ? nextId("barber") : slug || nextId("barber"),
-    name: input.name,
-    role: input.role ?? "Barbero",
-    specialty: input.specialty || "Barbería",
-    img: input.img || "/barbers/br1.jpg",
-    serviceIds: db().services.map((s) => s.id),
-    active: input.active ?? false,
-    userId: input.userId,
+function mapBarber(r: Row): Barber {
+  const bs = (r.barber_services as { service_id: string }[] | undefined) ?? [];
+  return {
+    id: r.id as string,
+    name: r.name as string,
+    role: (r.role_label as string) ?? "Barbero",
+    specialty: (r.specialty as string) ?? "",
+    img: (r.img_url as string) ?? "/barbers/br1.jpg",
+    serviceIds: bs.map((x) => x.service_id),
+    active: r.is_active as boolean,
+    userId: (r.profile_id as string) ?? undefined,
   };
-  db().barbers.push(barber);
-  // Horario por defecto: todos los días 10–20 con corte 13–14
-  for (const wd of [0, 1, 2, 3, 4, 5, 6]) {
-    db().workingHours.push({ barberId: barber.id, weekday: wd, open: "10:00", close: "20:00", breakStart: "13:00", breakEnd: "14:00" });
-  }
-  return barber;
-}
-export function updateBarber(id: string, patch: Partial<Pick<Barber, "name" | "specialty" | "img" | "role">>): Barber {
-  const b = getBarber(id);
-  if (!b) throw new Error("Barbero inexistente");
-  Object.assign(b, patch);
-  return b;
-}
-export function setBarberActive(id: string, active: boolean): Barber {
-  const b = getBarber(id);
-  if (!b) throw new Error("Barbero inexistente");
-  b.active = active;
-  return b;
 }
 
-// ---------- Horarios ----------
-export function setWorkingHours(barberId: string, hours: Omit<WorkingHours, "barberId">[]): void {
-  const d = db();
-  d.workingHours = d.workingHours.filter((w) => w.barberId !== barberId);
-  for (const h of hours) d.workingHours.push({ ...h, barberId });
+function mapAppt(r: Row): Appointment {
+  const pays = (r.payments as { kind: string; method: string | null; status: string }[] | undefined) ?? [];
+  const sena = pays.find((p) => p.kind === "sena");
+  const saldo = pays.find((p) => p.kind === "saldo");
+  const prof = r.profiles as { full_name?: string; phone?: string } | null;
+  const status = r.status as Appointment["status"];
+  return {
+    id: r.id as string,
+    serviceId: r.service_id as string,
+    barberId: r.barber_id as string,
+    customerId: (r.customer_id as string) ?? null,
+    customerName: (r.customer_name_snapshot as string) || prof?.full_name || "Cliente",
+    customerPhone: (r.customer_phone_snapshot as string) || prof?.phone || "",
+    start: r.starts_at as string,
+    end: r.ends_at as string,
+    status,
+    priceCents: r.price_cents as number,
+    depositCents: r.deposit_cents as number,
+    holdExpiresAt: status === "hold" ? (r.hold_expires_at as string) : null,
+    depositMethod: (sena?.method as PaymentMethod) ?? null,
+    depositStatus: sena?.status === "approved" ? "pagado" : "pendiente",
+    balanceMethod: (saldo?.method as PaymentMethod) ?? null,
+    balanceStatus: saldo?.status === "approved" ? "pagado" : "pendiente",
+    createdAt: (r.created_at as string) ?? (r.starts_at as string),
+  };
 }
 
-// ---------- Disponibilidad / holds ----------
-export function activeAppointmentsForBarber(barberId: string): Appointment[] {
-  const now = nowMs();
-  return db().appointments.filter((a) => {
-    if (a.barberId !== barberId) return false;
-    if (a.status === "confirmada" || a.status === "en_curso" || a.status === "completada" || a.status === "no_show") return true;
-    if (a.status === "hold" && a.holdExpiresAt && Date.parse(a.holdExpiresAt) > now) return true;
-    return false;
-  });
-}
-export function expireHolds(): number {
-  const now = nowMs();
-  let n = 0;
-  for (const a of db().appointments) {
-    if (a.status === "hold" && a.holdExpiresAt && Date.parse(a.holdExpiresAt) <= now) {
-      a.status = "expirada";
-      n++;
-    }
-  }
-  return n;
-}
+const APPT_SEL =
+  "id,service_id,barber_id,customer_id,customer_name_snapshot,customer_phone_snapshot,starts_at,ends_at,status,price_cents,deposit_cents,hold_expires_at,created_at,profiles:customer_id(full_name,phone),payments(kind,method,status)";
+const BARBER_SEL = "id,name,role_label,specialty,img_url,is_active,profile_id,sort_order,barber_services(service_id)";
+const SERVICE_SEL = "id,name,description,price_cents,duration_min,deposit_pct,is_featured,is_active,sort_order,slug";
 
-function rangesOverlap(aS: number, aE: number, bS: number, bE: number): boolean {
-  return aS < bE && bS < aE;
-}
+class StoreError extends Error {}
 export class SlotTakenError extends Error {
   constructor() {
     super("Ese horario ya fue tomado. Elegí otro.");
     this.name = "SlotTakenError";
   }
 }
+function isExclusion(error: { code?: string } | null): boolean {
+  return error?.code === "23P01";
+}
 
-export function createHold(input: {
+// ---------- Catálogo (lecturas) ----------
+export async function listServices(): Promise<Service[]> {
+  const { data } = await sb.from("services").select(SERVICE_SEL).eq("is_active", true).order("sort_order");
+  return (data ?? []).map(mapService);
+}
+export async function getService(id: string): Promise<Service | undefined> {
+  const { data } = await sb.from("services").select(SERVICE_SEL).eq("id", id).maybeSingle();
+  return data ? mapService(data) : undefined;
+}
+export async function listBarbers(): Promise<Barber[]> {
+  const { data } = await sb.from("barbers").select(BARBER_SEL).order("sort_order");
+  return (data ?? []).map(mapBarber);
+}
+export async function getBarber(id: string): Promise<Barber | undefined> {
+  const { data } = await sb.from("barbers").select(BARBER_SEL).eq("id", id).maybeSingle();
+  return data ? mapBarber(data) : undefined;
+}
+export async function barbersForService(serviceId: string): Promise<Barber[]> {
+  return (await listBarbers()).filter((b) => b.active && b.serviceIds.includes(serviceId));
+}
+export async function getBarberByUserId(userId: string): Promise<Barber | undefined> {
+  const { data } = await sb.from("barbers").select(BARBER_SEL).eq("profile_id", userId).maybeSingle();
+  return data ? mapBarber(data) : undefined;
+}
+export async function listPendingBarbers(): Promise<Barber[]> {
+  return (await listBarbers()).filter((b) => !b.active);
+}
+
+// ---------- Horarios (colapsa franjas start_min/end_min → open/close/break) ----------
+function collapseDay(barberId: string, weekday: number, franjas: { start_min: number; end_min: number }[]): WorkingHours {
+  const sorted = [...franjas].sort((a, b) => a.start_min - b.start_min);
+  const open = minToHHMM(sorted[0].start_min);
+  const close = minToHHMM(sorted[sorted.length - 1].end_min);
+  let breakStart: string | undefined;
+  let breakEnd: string | undefined;
+  for (let i = 0; i < sorted.length - 1; i++) {
+    if (sorted[i].end_min < sorted[i + 1].start_min) {
+      breakStart = minToHHMM(sorted[i].end_min);
+      breakEnd = minToHHMM(sorted[i + 1].start_min);
+      break;
+    }
+  }
+  return { barberId, weekday, open, close, breakStart, breakEnd };
+}
+export async function workingHoursForBarber(barberId: string): Promise<WorkingHours[]> {
+  const { data } = await sb
+    .from("working_hours")
+    .select("weekday,start_min,end_min")
+    .eq("barber_id", barberId)
+    .eq("is_active", true);
+  const byDay = new Map<number, { start_min: number; end_min: number }[]>();
+  for (const r of data ?? []) {
+    const wd = r.weekday as number;
+    if (!byDay.has(wd)) byDay.set(wd, []);
+    byDay.get(wd)!.push({ start_min: r.start_min as number, end_min: r.end_min as number });
+  }
+  return [...byDay.entries()].map(([wd, franjas]) => collapseDay(barberId, wd, franjas));
+}
+export async function workingHoursFor(barberId: string, weekday: number): Promise<WorkingHours | undefined> {
+  return (await workingHoursForBarber(barberId)).find((w) => w.weekday === weekday);
+}
+export async function setWorkingHours(barberId: string, hours: Omit<WorkingHours, "barberId">[]): Promise<void> {
+  await sb.from("working_hours").delete().eq("barber_id", barberId);
+  const rows: Row[] = [];
+  for (const h of hours) {
+    const open = hhmmToMin(h.open);
+    const close = hhmmToMin(h.close);
+    const bs = h.breakStart ? hhmmToMin(h.breakStart) : null;
+    const be = h.breakEnd ? hhmmToMin(h.breakEnd) : null;
+    if (bs != null && be != null && bs > open && be < close && be > bs) {
+      rows.push({ barber_id: barberId, weekday: h.weekday, start_min: open, end_min: bs, is_active: true });
+      rows.push({ barber_id: barberId, weekday: h.weekday, start_min: be, end_min: close, is_active: true });
+    } else {
+      rows.push({ barber_id: barberId, weekday: h.weekday, start_min: open, end_min: close, is_active: true });
+    }
+  }
+  if (rows.length) await sb.from("working_hours").insert(rows);
+}
+
+// ---------- ABM: servicios ----------
+function slugify(name: string): string {
+  return name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+export async function createService(input: Omit<Service, "id">): Promise<Service> {
+  const slug = slugify(input.name) || `svc-${Date.now()}`;
+  const { data, error } = await sb
+    .from("services")
+    .insert({ slug, name: input.name, description: input.description, price_cents: input.priceCents, duration_min: input.durationMin, deposit_pct: input.depositPct, is_featured: input.featured ?? false })
+    .select(SERVICE_SEL)
+    .single();
+  if (error) throw new StoreError(error.message);
+  // todos los barberos lo ofrecen por defecto
+  const { data: barbers } = await sb.from("barbers").select("id");
+  if (barbers?.length) {
+    await sb.from("barber_services").insert(barbers.map((b) => ({ barber_id: b.id, service_id: data.id }))).select();
+  }
+  return mapService(data);
+}
+export async function updateService(id: string, patch: Partial<Omit<Service, "id">>): Promise<Service> {
+  const upd: Row = {};
+  if (patch.name !== undefined) upd.name = patch.name;
+  if (patch.description !== undefined) upd.description = patch.description;
+  if (patch.priceCents !== undefined) upd.price_cents = patch.priceCents;
+  if (patch.durationMin !== undefined) upd.duration_min = patch.durationMin;
+  if (patch.depositPct !== undefined) upd.deposit_pct = patch.depositPct;
+  if (patch.featured !== undefined) upd.is_featured = patch.featured;
+  const { data, error } = await sb.from("services").update(upd).eq("id", id).select(SERVICE_SEL).single();
+  if (error) throw new StoreError(error.message);
+  return mapService(data);
+}
+export async function deleteService(id: string): Promise<void> {
+  // soft-delete: appointments referencian service_id (on delete restrict)
+  await sb.from("services").update({ is_active: false }).eq("id", id);
+}
+
+// ---------- ABM: barberos ----------
+export async function createBarber(input: { name: string; specialty: string; img?: string; active?: boolean; userId?: string; role?: string }): Promise<Barber> {
+  const { data, error } = await sb
+    .from("barbers")
+    .insert({ name: input.name, specialty: input.specialty || "Barbería", img_url: input.img, role_label: input.role ?? "Barbero", is_active: input.active ?? false, profile_id: input.userId })
+    .select("id")
+    .single();
+  if (error) throw new StoreError(error.message);
+  // ofrece todos los servicios + horario por defecto 10–20 con corte 13–14
+  const { data: services } = await sb.from("services").select("id").eq("is_active", true);
+  if (services?.length) await sb.from("barber_services").insert(services.map((s) => ({ barber_id: data.id, service_id: s.id })));
+  const wh: Row[] = [];
+  for (const wd of [0, 1, 2, 3, 4, 5, 6]) {
+    wh.push({ barber_id: data.id, weekday: wd, start_min: 600, end_min: 780, is_active: true });
+    wh.push({ barber_id: data.id, weekday: wd, start_min: 840, end_min: 1200, is_active: true });
+  }
+  await sb.from("working_hours").insert(wh);
+  return (await getBarber(data.id))!;
+}
+export async function updateBarber(id: string, patch: Partial<Pick<Barber, "name" | "specialty" | "img" | "role">>): Promise<Barber> {
+  const upd: Row = {};
+  if (patch.name !== undefined) upd.name = patch.name;
+  if (patch.specialty !== undefined) upd.specialty = patch.specialty;
+  if (patch.img !== undefined) upd.img_url = patch.img;
+  if (patch.role !== undefined) upd.role_label = patch.role;
+  const { error } = await sb.from("barbers").update(upd).eq("id", id);
+  if (error) throw new StoreError(error.message);
+  return (await getBarber(id))!;
+}
+export async function setBarberActive(id: string, active: boolean): Promise<Barber> {
+  await sb.from("barbers").update({ is_active: active }).eq("id", id);
+  return (await getBarber(id))!;
+}
+
+// ---------- Disponibilidad / turnos ----------
+export async function activeAppointmentsForBarber(barberId: string): Promise<Appointment[]> {
+  const nowIso = new Date(nowMs()).toISOString();
+  const { data } = await sb
+    .from("appointments")
+    .select(APPT_SEL)
+    .eq("barber_id", barberId)
+    .in("status", OCCUPYING as unknown as string[]);
+  return (data ?? [])
+    .map(mapAppt)
+    .filter((a) => a.status !== "hold" || (a.holdExpiresAt != null && a.holdExpiresAt > nowIso));
+}
+export async function expireHolds(): Promise<number> {
+  const nowIso = new Date(nowMs()).toISOString();
+  const { data } = await sb
+    .from("appointments")
+    .update({ status: "expirada" })
+    .eq("status", "hold")
+    .lte("hold_expires_at", nowIso)
+    .select("id");
+  return data?.length ?? 0;
+}
+
+export async function getAppointment(id: string): Promise<Appointment | undefined> {
+  const { data } = await sb.from("appointments").select(APPT_SEL).eq("id", id).maybeSingle();
+  return data ? mapAppt(data) : undefined;
+}
+
+async function insertAppointment(row: Row): Promise<Appointment> {
+  const { data, error } = await sb.from("appointments").insert(row).select(APPT_SEL).single();
+  if (isExclusion(error)) throw new SlotTakenError();
+  if (error) throw new StoreError(error.message);
+  return mapAppt(data);
+}
+async function insertPayment(appointmentId: string, kind: "sena" | "saldo", method: PaymentMethod, amountCents: number, status: "approved" | "pending" = "approved"): Promise<void> {
+  await sb.from("payments").insert({
+    appointment_id: appointmentId,
+    amount_cents: amountCents,
+    kind,
+    method,
+    status,
+    is_current: false,
+    paid_at: status === "approved" ? new Date().toISOString() : null,
+  });
+}
+
+export async function createHold(input: {
   serviceId: string;
   barberId: string;
   startISO: string;
@@ -388,113 +291,71 @@ export function createHold(input: {
   customerId: string | null;
   customerName: string;
   customerPhone: string;
-}): Appointment {
-  const svc = getService(input.serviceId);
-  if (!svc) throw new Error("Servicio inexistente");
+}): Promise<Appointment> {
+  const svc = await getService(input.serviceId);
+  if (!svc) throw new StoreError("Servicio inexistente");
   const start = new Date(input.startISO);
   const end = new Date(start.getTime() + svc.durationMin * 60_000);
-  const bufferMs = DECISIONS.bufferMinutes * 60_000;
-  const sMs = start.getTime();
-  const eMs = end.getTime();
-  for (const a of activeAppointmentsForBarber(input.barberId)) {
-    if (rangesOverlap(sMs, eMs, Date.parse(a.start) - bufferMs, Date.parse(a.end) + bufferMs)) {
-      throw new SlotTakenError();
-    }
-  }
-  const appt: Appointment = {
-    id: nextId("turno"),
-    serviceId: svc.id,
-    barberId: input.barberId,
-    customerId: input.customerId,
-    customerName: input.customerName,
-    customerPhone: input.customerPhone,
-    start: start.toISOString(),
-    end: end.toISOString(),
+  return insertAppointment({
+    customer_id: input.customerId,
+    customer_name_snapshot: input.customerId ? null : input.customerName,
+    customer_phone_snapshot: input.customerId ? null : input.customerPhone,
+    barber_id: input.barberId,
+    service_id: svc.id,
+    service_name_snapshot: svc.name,
+    duration_min_snapshot: svc.durationMin,
+    starts_at: start.toISOString(),
+    ends_at: end.toISOString(),
     status: "hold",
-    priceCents: svc.priceCents,
-    depositCents: depositForPrice(svc.priceCents),
-    holdExpiresAt: new Date(nowMs() + DECISIONS.holdTtlMinutes * 60_000).toISOString(),
-    depositMethod: input.depositMethod,
-    depositStatus: "pendiente",
-    balanceMethod: null,
-    balanceStatus: "pendiente",
-    createdAt: new Date().toISOString(),
-  };
-  db().appointments.push(appt);
-  return appt;
-}
-
-export function getAppointment(id: string): Appointment | undefined {
-  return db().appointments.find((a) => a.id === id);
-}
-
-function pushPayment(appt: Appointment, kind: "sena" | "saldo", method: PaymentMethod, amountCents: number): void {
-  db().payments.push({
-    id: nextId("pago"),
-    appointmentId: appt.id,
-    barberId: appt.barberId,
-    kind,
-    method,
-    amountCents,
-    createdAt: new Date().toISOString(),
+    price_cents: svc.priceCents,
+    deposit_cents: depositForPrice(svc.priceCents),
+    hold_expires_at: new Date(nowMs() + 12 * 60_000).toISOString(),
   });
 }
 
-/** Seña pagada por MercadoPago (simulado) → confirma. */
-export function payDepositMercadoPago(id: string): Appointment {
-  const appt = getAppointment(id);
-  if (!appt) throw new Error("Turno inexistente");
+export async function payDepositMercadoPago(id: string): Promise<Appointment> {
+  const appt = await getAppointment(id);
+  if (!appt) throw new StoreError("Turno inexistente");
   if (appt.status === "confirmada") return appt;
-  if (appt.status !== "hold") throw new Error("El turno ya no está disponible.");
+  if (appt.status !== "hold") throw new StoreError("El turno ya no está disponible.");
   if (appt.holdExpiresAt && Date.parse(appt.holdExpiresAt) <= nowMs()) {
-    appt.status = "expirada";
-    throw new Error("La reserva expiró. Volvé a empezar.");
+    await sb.from("appointments").update({ status: "expirada" }).eq("id", id);
+    throw new StoreError("La reserva expiró. Volvé a empezar.");
   }
-  appt.status = "confirmada";
-  appt.depositMethod = "mercadopago";
-  appt.depositStatus = "pagado";
-  appt.holdExpiresAt = null;
-  pushPayment(appt, "sena", "mercadopago", appt.depositCents);
-  return appt;
+  await sb.from("appointments").update({ status: "confirmada" }).eq("id", id);
+  await insertPayment(id, "sena", "mercadopago", appt.depositCents, "approved");
+  return (await getAppointment(id))!;
 }
-
-/** Seña a pagar en efectivo en el local → confirma el turno (seña pendiente). */
-export function confirmDepositEfectivo(id: string): Appointment {
-  const appt = getAppointment(id);
-  if (!appt) throw new Error("Turno inexistente");
+export async function confirmDepositEfectivo(id: string): Promise<Appointment> {
+  const appt = await getAppointment(id);
+  if (!appt) throw new StoreError("Turno inexistente");
   if (appt.status === "confirmada") return appt;
-  if (appt.status !== "hold") throw new Error("El turno ya no está disponible.");
-  appt.status = "confirmada";
-  appt.depositMethod = "efectivo";
-  appt.depositStatus = "pendiente";
-  appt.holdExpiresAt = null;
-  return appt;
+  if (appt.status !== "hold") throw new StoreError("El turno ya no está disponible.");
+  await sb.from("appointments").update({ status: "confirmada" }).eq("id", id);
+  await insertPayment(id, "sena", "efectivo", appt.depositCents, "pending");
+  return (await getAppointment(id))!;
 }
-
-/** Panel: registra que la seña en efectivo se cobró. */
-export function registrarSenaEfectivo(id: string): Appointment {
-  const appt = getAppointment(id);
-  if (!appt) throw new Error("Turno inexistente");
+export async function registrarSenaEfectivo(id: string): Promise<Appointment> {
+  const appt = await getAppointment(id);
+  if (!appt) throw new StoreError("Turno inexistente");
   if (appt.depositStatus === "pagado") return appt;
-  appt.depositMethod = "efectivo";
-  appt.depositStatus = "pagado";
-  pushPayment(appt, "sena", "efectivo", appt.depositCents);
-  return appt;
+  const { data: existing } = await sb.from("payments").select("id").eq("appointment_id", id).eq("kind", "sena").maybeSingle();
+  if (existing) {
+    await sb.from("payments").update({ status: "approved", method: "efectivo", paid_at: new Date().toISOString() }).eq("id", existing.id);
+  } else {
+    await insertPayment(id, "sena", "efectivo", appt.depositCents, "approved");
+  }
+  return (await getAppointment(id))!;
 }
-
-/** Panel: registra el cobro del saldo (en el local), por efectivo o MP. */
-export function registrarSaldo(id: string, method: PaymentMethod): Appointment {
-  const appt = getAppointment(id);
-  if (!appt) throw new Error("Turno inexistente");
+export async function registrarSaldo(id: string, method: PaymentMethod): Promise<Appointment> {
+  const appt = await getAppointment(id);
+  if (!appt) throw new StoreError("Turno inexistente");
   if (appt.balanceStatus === "pagado") return appt;
-  appt.balanceMethod = method;
-  appt.balanceStatus = "pagado";
-  pushPayment(appt, "saldo", method, appt.priceCents - appt.depositCents);
-  return appt;
+  await insertPayment(id, "saldo", method, appt.priceCents - appt.depositCents, "approved");
+  return (await getAppointment(id))!;
 }
 
-/** Alta de turno por el staff (walk-in): queda confirmado directo. */
-export function createWalkIn(input: {
+export async function createWalkIn(input: {
   serviceId: string;
   barberId: string;
   startISO: string;
@@ -502,129 +363,126 @@ export function createWalkIn(input: {
   customerPhone: string;
   depositMethod: PaymentMethod;
   depositPaid: boolean;
-}): Appointment {
-  const svc = getService(input.serviceId);
-  if (!svc) throw new Error("Servicio inexistente");
+}): Promise<Appointment> {
+  const svc = await getService(input.serviceId);
+  if (!svc) throw new StoreError("Servicio inexistente");
   const start = new Date(input.startISO);
   const end = new Date(start.getTime() + svc.durationMin * 60_000);
-  const bufferMs = DECISIONS.bufferMinutes * 60_000;
-  const sMs = start.getTime();
-  const eMs = end.getTime();
-  for (const a of activeAppointmentsForBarber(input.barberId)) {
-    if (rangesOverlap(sMs, eMs, Date.parse(a.start) - bufferMs, Date.parse(a.end) + bufferMs)) {
-      throw new SlotTakenError();
-    }
-  }
-  const depositCents = depositForPrice(svc.priceCents);
-  const appt: Appointment = {
-    id: nextId("turno"),
-    serviceId: svc.id,
-    barberId: input.barberId,
-    customerId: null,
-    customerName: input.customerName || "Walk-in",
-    customerPhone: input.customerPhone,
-    start: start.toISOString(),
-    end: end.toISOString(),
+  const appt = await insertAppointment({
+    customer_id: null,
+    customer_name_snapshot: input.customerName || "Walk-in",
+    customer_phone_snapshot: input.customerPhone,
+    barber_id: input.barberId,
+    service_id: svc.id,
+    service_name_snapshot: svc.name,
+    duration_min_snapshot: svc.durationMin,
+    starts_at: start.toISOString(),
+    ends_at: end.toISOString(),
     status: "confirmada",
-    priceCents: svc.priceCents,
-    depositCents,
-    holdExpiresAt: null,
-    depositMethod: input.depositMethod,
-    depositStatus: input.depositPaid ? "pagado" : "pendiente",
-    balanceMethod: null,
-    balanceStatus: "pendiente",
-    createdAt: new Date().toISOString(),
-  };
-  db().appointments.push(appt);
-  if (input.depositPaid) pushPayment(appt, "sena", input.depositMethod, depositCents);
+    price_cents: svc.priceCents,
+    deposit_cents: depositForPrice(svc.priceCents),
+    hold_expires_at: new Date().toISOString(),
+  });
+  if (input.depositPaid) await insertPayment(appt.id, "sena", input.depositMethod, appt.depositCents, "approved");
   return appt;
 }
 
-export function cancelAppointment(id: string): Appointment {
-  const appt = getAppointment(id);
-  if (!appt) throw new Error("Turno inexistente");
-  appt.status = "cancelada";
-  return appt;
+export async function cancelAppointment(id: string): Promise<Appointment> {
+  await sb.from("appointments").update({ status: "cancelada", cancelled_at: new Date().toISOString() }).eq("id", id);
+  return (await getAppointment(id))!;
 }
-export function setAppointmentStatus(id: string, status: Appointment["status"]): Appointment {
-  const appt = getAppointment(id);
-  if (!appt) throw new Error("Turno inexistente");
-  appt.status = status;
-  return appt;
+export async function setAppointmentStatus(id: string, status: Appointment["status"]): Promise<Appointment> {
+  await sb.from("appointments").update({ status }).eq("id", id);
+  return (await getAppointment(id))!;
 }
 
 // ---------- Consultas cliente / panel ----------
-export function appointmentsForCustomer(customerId: string): Appointment[] {
-  return db()
-    .appointments.filter((a) => a.customerId === customerId && a.status !== "expirada")
-    .sort((a, b) => Date.parse(b.start) - Date.parse(a.start));
+export async function appointmentsForCustomer(customerId: string): Promise<Appointment[]> {
+  const { data } = await sb
+    .from("appointments")
+    .select(APPT_SEL)
+    .eq("customer_id", customerId)
+    .neq("status", "expirada")
+    .order("starts_at", { ascending: false });
+  return (data ?? []).map(mapAppt);
 }
-export function appointmentsOnDate(dateStr: string): Appointment[] {
-  const dayUtc = arDateTime(dateStr, "00:00").toISOString().slice(0, 10);
-  return db()
-    .appointments.filter(
-      (a) =>
-        (a.status === "confirmada" || a.status === "en_curso" || a.status === "completada" || a.status === "no_show") &&
-        a.start.slice(0, 10) === dayUtc,
-    )
-    .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+export async function appointmentsOnDate(dateStr: string): Promise<Appointment[]> {
+  const lo = new Date(`${dateStr}T00:00:00-03:00`).toISOString();
+  const hi = new Date(`${dateStr}T00:00:00-03:00`);
+  hi.setDate(hi.getDate() + 1);
+  const { data } = await sb
+    .from("appointments")
+    .select(APPT_SEL)
+    .in("status", ["confirmada", "en_curso", "completada", "no_show"])
+    .gte("starts_at", lo)
+    .lt("starts_at", hi.toISOString())
+    .order("starts_at", { ascending: true });
+  return (data ?? []).map(mapAppt);
 }
-export function allUpcomingAppointments(): Appointment[] {
-  const now = nowMs();
-  return db()
-    .appointments.filter((a) => a.status === "confirmada" && Date.parse(a.start) >= now - 86_400_000)
-    .sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+export async function allUpcomingAppointments(): Promise<Appointment[]> {
+  const lo = new Date(nowMs() - 86_400_000).toISOString();
+  const { data } = await sb
+    .from("appointments")
+    .select(APPT_SEL)
+    .eq("status", "confirmada")
+    .gte("starts_at", lo)
+    .order("starts_at", { ascending: true });
+  return (data ?? []).map(mapAppt);
 }
-/** Todos los turnos relevantes para la tabla del panel. */
-export function listAllAppointments(): Appointment[] {
-  return db()
-    .appointments.filter((a) => a.status !== "hold" && a.status !== "expirada")
-    .sort((a, b) => Date.parse(b.start) - Date.parse(a.start));
+export async function listAllAppointments(): Promise<Appointment[]> {
+  const { data } = await sb
+    .from("appointments")
+    .select(APPT_SEL)
+    .not("status", "in", "(hold,expirada)")
+    .order("starts_at", { ascending: false });
+  return (data ?? []).map(mapAppt);
 }
-export function listPayments(): Payment[] {
-  return db().payments;
+export async function listPayments(): Promise<Payment[]> {
+  const { data } = await sb
+    .from("payments")
+    .select("id,appointment_id,kind,method,amount_cents,paid_at,created_at,status,appointments(barber_id)")
+    .eq("status", "approved");
+  return (data ?? []).map((r) => {
+    const appt = r.appointments as { barber_id?: string } | null;
+    return {
+      id: r.id as string,
+      appointmentId: r.appointment_id as string,
+      barberId: (appt?.barber_id as string) ?? "",
+      kind: (r.kind as "sena" | "saldo") ?? "sena",
+      method: (r.method as PaymentMethod) ?? "efectivo",
+      amountCents: r.amount_cents as number,
+      createdAt: (r.paid_at as string) ?? (r.created_at as string),
+    };
+  });
 }
 
-// ---------- Usuarios ----------
-export function findUserByEmail(email: string): User | undefined {
-  return db().users.find((u) => u.email.toLowerCase() === email.toLowerCase());
-}
-export function getUser(id: string): User | undefined {
-  return db().users.find((u) => u.id === id);
-}
-export function setUserAvatar(userId: string, url: string): void {
-  const u = getUser(userId);
-  if (u) u.avatarUrl = url;
-}
-export function createUser(input: {
-  email: string;
-  name: string;
-  phone: string;
-  password: string;
-  role?: "cliente" | "barbero";
-  barberId?: string;
-}): User {
-  const user: User = {
-    id: nextId("u"),
-    email: input.email,
-    name: input.name,
-    phone: input.phone,
-    password: input.password,
-    role: input.role ?? "cliente",
-    barberId: input.barberId,
+// ---------- Usuarios (profiles + auth) ----------
+function mapUser(profile: Row, barberId?: string): User {
+  return {
+    id: profile.id as string,
+    email: (profile.email as string) ?? "",
+    name: (profile.full_name as string) ?? "",
+    phone: (profile.phone as string) ?? "",
+    password: "",
+    role: profile.role as User["role"],
+    barberId,
+    avatarUrl: (profile.avatar_url as string) ?? undefined,
   };
-  db().users.push(user);
-  return user;
 }
-
-/** Auto-registro de barbero: crea usuario (rol barbero) + perfil INACTIVO. */
-export function registerBarber(input: { email: string; name: string; phone: string; password: string }): { user: User; barber: Barber } {
-  const user = createUser({ ...input, role: "barbero" });
-  const barber = createBarber({ name: input.name, specialty: "Barbería", active: false, userId: user.id });
-  user.barberId = barber.id;
-  return { user, barber };
+export async function getUser(id: string): Promise<User | undefined> {
+  const { data } = await sb.from("profiles").select("id,email,full_name,phone,role,avatar_url").eq("id", id).maybeSingle();
+  if (!data) return undefined;
+  let barberId: string | undefined;
+  if (data.role === "barbero") {
+    const { data: b } = await sb.from("barbers").select("id").eq("profile_id", id).maybeSingle();
+    barberId = b?.id;
+  }
+  return mapUser(data, barberId);
 }
-
-export function listPendingBarbers(): Barber[] {
-  return db().barbers.filter((b) => !b.active);
+export async function findUserByEmail(email: string): Promise<User | undefined> {
+  const { data } = await sb.from("profiles").select("id,email,full_name,phone,role,avatar_url").ilike("email", email).maybeSingle();
+  return data ? mapUser(data) : undefined;
+}
+export async function setUserAvatar(userId: string, url: string): Promise<void> {
+  await sb.from("profiles").update({ avatar_url: url }).eq("id", userId);
 }
