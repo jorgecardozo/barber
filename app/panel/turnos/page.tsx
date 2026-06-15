@@ -65,7 +65,7 @@ export default async function TurnosPage() {
   return (
     <>
       <PanelHeader user={staff} active="turnos" />
-      <main className="mx-auto max-w-6xl min-w-0 flex-1 overflow-x-clip px-6 py-10 lg:px-8">
+      <main className="mx-auto w-full max-w-6xl min-w-0 flex-1 overflow-x-clip px-6 py-10 lg:px-8">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="mb-1 font-display text-3xl">Turnos</h1>

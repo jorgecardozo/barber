@@ -19,7 +19,7 @@ export function PanelHeader({ user, active }: { user: User; active: TabKey }) {
   const items = NAV.filter((n) => !n.adminOnly || user.role === "admin");
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
-      <div className="relative mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-5">
+      <div className="relative mx-auto flex max-w-6xl items-center gap-2 px-6 py-2.5 sm:gap-3 lg:px-8">
         <Link href="/panel" className="shrink-0 font-display text-base tracking-wide sm:text-lg">
           <span className="chrome-text italic">FLOW SITE</span>
         </Link>
