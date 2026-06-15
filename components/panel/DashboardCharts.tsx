@@ -1,44 +1,33 @@
 "use client";
 
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  Label,
   Pie,
   PieChart,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type Barbero = { id: string; name: string; img: string; ingreso: number; cortes: number };
-type Metodo = { name: string; value: number };
+type Metodo = { name: string; key: string; value: number };
 type Dia = { label: string; ingreso: number };
-
-const RED = "#e23b3b";
-const CYAN = "#1de9d6";
-const INK2 = "#0e0e13";
 
 const ars = (n: number) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
 
-function TooltipBox({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="rounded-lg border border-white/10 bg-ink px-3 py-2 text-xs">
-      {label && <p className="mb-1 text-bone">{label}</p>}
-      {payload.map((p: any, i: number) => (
-        <p key={i} style={{ color: p.color || p.payload?.fill }}>
-          {p.name}: {ars(p.value)}
-        </p>
-      ))}
-    </div>
-  );
-}
-
-/** Tick del eje X con el avatar circular del barbero. */
 function AvatarTick({ x, y, payload, avatars }: any) {
   const b = avatars[payload.value] as Barbero | undefined;
   const id = `clip-${payload.value}`;
@@ -46,23 +35,11 @@ function AvatarTick({ x, y, payload, avatars }: any) {
     <g transform={`translate(${x},${y})`}>
       <defs>
         <clipPath id={id}>
-          <circle cx="0" cy="18" r="15" />
+          <circle cx="0" cy="20" r="16" />
         </clipPath>
       </defs>
-      {b && (
-        <image
-          href={b.img}
-          x={-15}
-          y={3}
-          width={30}
-          height={30}
-          clipPath={`url(#${id})`}
-          preserveAspectRatio="xMidYMid slice"
-        />
-      )}
-      <text x={0} y={50} textAnchor="middle" fill="#f4f4f5" fontSize={12} fontWeight={600}>
-        {b?.name ?? payload.value}
-      </text>
+      {b && <image href={b.img} x={-16} y={4} width={32} height={32} clipPath={`url(#${id})`} preserveAspectRatio="xMidYMid slice" />}
+      <text x={0} y={54} textAnchor="middle" fill="var(--foreground)" fontSize={12} fontWeight={600}>{b?.name ?? payload.value}</text>
     </g>
   );
 }
@@ -77,72 +54,103 @@ export function DashboardCharts({
   porDia: Dia[];
 }) {
   const avatars: Record<string, Barbero> = Object.fromEntries(porBarbero.map((b) => [b.id, b]));
-  const barData = porBarbero.map((b) => ({ id: b.id, ingreso: b.ingreso, name: b.name }));
+  const barData = porBarbero.map((b) => ({ id: b.id, ingreso: b.ingreso }));
+  const totalMetodo = porMetodo.reduce((s, m) => s + m.value, 0);
+
+  const barConfig = { ingreso: { label: "Ingresos", color: "var(--chart-1)" } } satisfies ChartConfig;
+  const diaConfig = { ingreso: { label: "Ingresos", color: "var(--chart-1)" } } satisfies ChartConfig;
+  const metodoConfig = {
+    mercadopago: { label: "MercadoPago", color: "var(--chart-3)" },
+    efectivo: { label: "Efectivo", color: "var(--chart-2)" },
+  } satisfies ChartConfig;
 
   return (
     <div className="space-y-6">
-      {/* Ingresos por barbero (con avatar) */}
-      <Card title="Ingresos por barbero">
-        <ResponsiveContainer width="100%" height={260}>
-          <BarChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 40 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-            <XAxis dataKey="id" tickLine={false} axisLine={false} interval={0} height={60} tick={(p) => <AvatarTick {...p} avatars={avatars} />} />
-            <YAxis tickFormatter={(v) => ars(v)} tick={{ fill: "#9a9aa3", fontSize: 11 }} axisLine={false} tickLine={false} width={70} />
-            <Tooltip content={<TooltipBox />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-            <Bar dataKey="ingreso" name="Ingresos" radius={[6, 6, 0, 0]} maxBarSize={70} isAnimationActive={false}>
-              {barData.map((_, i) => (
-                <Cell key={i} fill={i % 2 === 0 ? RED : CYAN} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold uppercase tracking-[0.15em] text-flow-cyan">
+            Ingresos por barbero
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer config={barConfig} className="h-[280px] w-full">
+            <BarChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 44 }}>
+              <defs>
+                <linearGradient id="barFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={1} />
+                  <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.5} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
+              <XAxis dataKey="id" tickLine={false} axisLine={false} interval={0} height={64} tick={(p) => <AvatarTick {...p} avatars={avatars} />} />
+              <YAxis tickFormatter={(v) => ars(v)} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={72} />
+              <ChartTooltip cursor={{ fill: "rgba(255,255,255,0.04)" }} content={<ChartTooltipContent formatter={(v) => ars(Number(v))} />} />
+              <Bar dataKey="ingreso" fill="url(#barFill)" radius={[8, 8, 0, 0]} maxBarSize={72} isAnimationActive={false} />
+            </BarChart>
+          </ChartContainer>
+        </CardContent>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Ingresos por método */}
-        <Card title="Ingresos por método de pago">
-          <ResponsiveContainer width="100%" height={240}>
-            <PieChart>
-              <Pie data={porMetodo} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={55} outerRadius={85} paddingAngle={3} stroke={INK2} isAnimationActive={false}>
-                {porMetodo.map((m, i) => (
-                  <Cell key={i} fill={m.name === "MercadoPago" ? "#009ee3" : CYAN} />
-                ))}
-              </Pie>
-              <Tooltip content={<TooltipBox />} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="mt-2 flex justify-center gap-5 text-sm">
-            {porMetodo.map((m) => (
-              <span key={m.name} className="flex items-center gap-2 text-ash">
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: m.name === "MercadoPago" ? "#009ee3" : CYAN }} />
-                {m.name}: <span className="text-bone">{ars(m.value)}</span>
-              </span>
-            ))}
-          </div>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold uppercase tracking-[0.15em] text-flow-cyan">
+              Ingresos por método
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={metodoConfig} className="mx-auto aspect-square h-[240px]">
+              <PieChart>
+                <ChartTooltip content={<ChartTooltipContent formatter={(v) => ars(Number(v))} hideLabel />} />
+                <Pie data={porMetodo} dataKey="value" nameKey="name" innerRadius={62} outerRadius={92} paddingAngle={3} strokeWidth={2} stroke="var(--card)" isAnimationActive={false}>
+                  {porMetodo.map((m) => (
+                    <Cell key={m.key} fill={`var(--color-${m.key})`} />
+                  ))}
+                  <Label content={({ viewBox }: any) => (
+                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                      <tspan x={viewBox.cx} y={viewBox.cy - 6} className="fill-foreground font-display text-xl">{ars(totalMetodo)}</tspan>
+                      <tspan x={viewBox.cx} y={viewBox.cy + 14} className="fill-muted-foreground text-xs">Total</tspan>
+                    </text>
+                  )} />
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+            <div className="mt-2 flex justify-center gap-5 text-sm">
+              {porMetodo.map((m) => (
+                <span key={m.key} className="flex items-center gap-2 text-muted-foreground">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: `var(--color-${m.key})` }} />
+                  {m.name}: <span className="text-foreground">{ars(m.value)}</span>
+                </span>
+              ))}
+            </div>
+          </CardContent>
         </Card>
 
-        {/* Ingresos por día */}
-        <Card title="Ingresos últimos días">
-          <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={porDia} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: "#9a9aa3", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={(v) => ars(v)} tick={{ fill: "#9a9aa3", fontSize: 11 }} axisLine={false} tickLine={false} width={70} />
-              <Tooltip content={<TooltipBox />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-              <Bar dataKey="ingreso" name="Ingresos" fill={RED} radius={[6, 6, 0, 0]} maxBarSize={40} isAnimationActive={false} />
-            </BarChart>
-          </ResponsiveContainer>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold uppercase tracking-[0.15em] text-flow-cyan">
+              Ingresos últimos días
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer config={diaConfig} className="h-[240px] w-full">
+              <AreaChart data={porDia} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.04} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
+                <XAxis dataKey="label" tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tickFormatter={(v) => ars(v)} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={72} />
+                <ChartTooltip cursor={{ stroke: "rgba(255,255,255,0.1)" }} content={<ChartTooltipContent formatter={(v) => ars(Number(v))} />} />
+                <Area type="monotone" dataKey="ingreso" stroke="var(--chart-1)" strokeWidth={2} fill="url(#areaFill)" isAnimationActive={false} />
+              </AreaChart>
+            </ChartContainer>
+          </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-white/8 bg-ink-2 p-5">
-      <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-flow-cyan">{title}</h3>
-      {children}
     </div>
   );
 }

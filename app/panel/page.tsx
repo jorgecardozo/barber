@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
+import { Clock3, DollarSign, Scissors, Users } from "lucide-react";
 import { PanelHeader } from "@/components/panel/PanelHeader";
 import { DashboardCharts } from "@/components/panel/DashboardCharts";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { requireStaff } from "@/lib/auth";
 import {
   allUpcomingAppointments,
   expireHolds,
-  getBarber,
+  getBarberByUserId,
   listAllAppointments,
   listBarbers,
   listPayments,
@@ -23,22 +27,38 @@ export default async function PanelPage() {
   if (!staff) redirect("/panel/ingresar");
   expireHolds();
 
+  // Barbero pendiente de activación
+  if (staff.role === "barbero") {
+    const me = getBarberByUserId(staff.id);
+    if (!me || !me.active) {
+      return (
+        <>
+          <PanelHeader user={staff} active="dashboard" />
+          <main className="mx-auto flex max-w-md flex-1 flex-col items-center justify-center px-5 py-24 text-center">
+            <Clock3 className="h-12 w-12 text-amber-300" />
+            <h1 className="mt-5 font-display text-3xl">Cuenta pendiente</h1>
+            <p className="mt-3 text-muted-foreground">
+              Tu registro como barbero está esperando que el admin te active. Cuando te habiliten,
+              vas a poder cargar tus horarios y aparecer disponible para los turnos.
+            </p>
+          </main>
+        </>
+      );
+    }
+  }
+
   const scope = (barberId: string) => staff.role === "admin" || barberId === staff.barberId;
   const payments = listPayments().filter((p) => scope(p.barberId));
   const appts = listAllAppointments().filter((a) => scope(a.barberId));
-  const barbers = (staff.role === "admin" ? listBarbers() : listBarbers().filter((b) => b.id === staff.barberId));
+  const barbers = (staff.role === "admin" ? listBarbers() : listBarbers().filter((b) => b.id === staff.barberId)).filter((b) => b.active);
 
-  // --- Métricas ---
   const ingresosTotales = payments.reduce((s, p) => s + p.amountCents, 0);
   const mp = payments.filter((p) => p.method === "mercadopago").reduce((s, p) => s + p.amountCents, 0);
   const efectivo = payments.filter((p) => p.method === "efectivo").reduce((s, p) => s + p.amountCents, 0);
   const cortes = appts.filter((a) => a.status === "completada").length;
-  const clientes = new Set(
-    appts.filter((a) => a.status === "completada" || a.status === "confirmada").map((a) => a.customerName),
-  ).size;
+  const clientes = new Set(appts.filter((a) => a.status === "completada" || a.status === "confirmada").map((a) => a.customerName)).size;
   const proximos = allUpcomingAppointments().filter((a) => scope(a.barberId)).length;
 
-  // --- Datos para gráficos ---
   const porBarbero = barbers.map((b) => ({
     id: b.id,
     name: b.name,
@@ -46,12 +66,10 @@ export default async function PanelPage() {
     ingreso: payments.filter((p) => p.barberId === b.id).reduce((s, p) => s + p.amountCents, 0) / 100,
     cortes: appts.filter((a) => a.barberId === b.id && a.status === "completada").length,
   }));
-
   const porMetodo = [
-    { name: "MercadoPago", value: mp / 100 },
-    { name: "Efectivo", value: efectivo / 100 },
+    { name: "MercadoPago", key: "mercadopago", value: mp / 100 },
+    { name: "Efectivo", key: "efectivo", value: efectivo / 100 },
   ];
-
   const dias = Array.from({ length: 7 }, (_, i) => addDays(todayAR(), -(6 - i)));
   const porDia = dias.map((d) => ({
     label: fmtDateShort(d).day,
@@ -63,50 +81,57 @@ export default async function PanelPage() {
       <PanelHeader user={staff} active="dashboard" />
       <main className="mx-auto max-w-6xl flex-1 px-5 py-8">
         <h1 className="font-display text-3xl">Dashboard</h1>
-        <p className="mb-6 text-sm text-ash">{fmtDateLong(todayAR())}</p>
+        <p className="mb-6 text-sm text-muted-foreground capitalize">{fmtDateLong(todayAR())}</p>
 
-        {/* Stat cards */}
         <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <Stat big={formatARS(ingresosTotales)} l="Ingresos totales" accent />
-          <Stat big={String(clientes)} l="Clientes atendidos" />
-          <Stat big={String(cortes)} l="Cortes realizados" />
-          <Stat big={String(proximos)} l="Próximos turnos" />
+          <Stat icon={DollarSign} big={formatARS(ingresosTotales)} l="Ingresos totales" accent />
+          <Stat icon={Users} big={String(clientes)} l="Clientes atendidos" />
+          <Stat icon={Scissors} big={String(cortes)} l="Cortes realizados" />
+          <Stat icon={Clock3} big={String(proximos)} l="Próximos turnos" />
         </div>
 
         <DashboardCharts porBarbero={porBarbero} porMetodo={porMetodo} porDia={porDia} />
 
-        {/* Per-barbero */}
         <section className="mt-8">
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-flow-cyan">Por barbero</h2>
           <div className="grid gap-3 sm:grid-cols-3">
             {porBarbero.map((b) => (
-              <div key={b.id} className="flex items-center gap-3 rounded-2xl border border-white/8 bg-ink-2 p-4">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={b.img} alt={b.name} className="h-12 w-12 rounded-full object-cover" />
-                <div>
-                  <p className="font-display text-lg">{b.name}</p>
-                  <p className="text-xs text-ash">
-                    {b.cortes} cortes · <span className="text-flow-cyan">{formatARS(b.ingreso * 100)}</span>
-                  </p>
-                </div>
-              </div>
+              <Card key={b.id}>
+                <CardContent className="flex items-center gap-3 py-4">
+                  <Avatar className="h-12 w-12">
+                    <AvatarImage src={b.img} alt={b.name} />
+                    <AvatarFallback>{b.name[0]}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-display text-lg">{b.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {b.cortes} cortes · <span className="text-flow-cyan">{formatARS(b.ingreso * 100)}</span>
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </section>
 
-        <Link href="/panel/turnos" className="mt-8 inline-block rounded-full bg-flow-red px-6 py-2.5 text-sm font-semibold text-white">
-          Ver todos los turnos →
-        </Link>
+        <Button asChild className="mt-8">
+          <Link href="/panel/turnos">Ver todos los turnos →</Link>
+        </Button>
       </main>
     </>
   );
 }
 
-function Stat({ big, l, accent }: { big: string; l: string; accent?: boolean }) {
+function Stat({ icon: Icon, big, l, accent }: { icon: React.ElementType; big: string; l: string; accent?: boolean }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-ink-2 p-4">
-      <p className={`font-display text-2xl ${accent ? "text-flow-cyan" : "text-bone"}`}>{big}</p>
-      <p className="text-xs uppercase tracking-wider text-ash">{l}</p>
-    </div>
+    <Card>
+      <CardContent className="py-4">
+        <div className="mb-1 flex items-center gap-2 text-muted-foreground">
+          <Icon className="h-4 w-4" />
+          <span className="text-xs uppercase tracking-wider">{l}</span>
+        </div>
+        <p className={`font-display text-2xl ${accent ? "text-flow-cyan" : "text-foreground"}`}>{big}</p>
+      </CardContent>
+    </Card>
   );
 }

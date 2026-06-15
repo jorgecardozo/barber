@@ -3,6 +3,7 @@ import { Anton, Inter } from "next/font/google";
 import "./globals.css";
 import { CursorGlow } from "@/components/CursorGlow";
 import { FloatingCTA } from "@/components/FloatingCTA";
+import { cn } from "@/lib/utils";
 
 const anton = Anton({
   variable: "--font-anton",
@@ -35,7 +36,7 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${anton.variable} ${inter.variable} h-full antialiased`}
+      className={cn("dark h-full antialiased", anton.variable, inter.variable, "font-sans")}
     >
       <body className="min-h-full flex flex-col bg-ink text-bone">
         {/* Si el visitante tiene JS desactivado, mostramos todo igual */}

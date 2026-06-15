@@ -31,10 +31,16 @@ export async function clearSession(): Promise<void> {
   jar.delete(COOKIE);
 }
 
-/** Helper de autorización para el panel. */
+/** Helper de autorización para el panel (admin o barbero ACTIVO). */
 export async function requireStaff(): Promise<User | null> {
   const u = await getSessionUser();
   if (!u) return null;
   if (u.role !== "admin" && u.role !== "barbero") return null;
+  return u;
+}
+
+export async function requireAdmin(): Promise<User | null> {
+  const u = await getSessionUser();
+  if (!u || u.role !== "admin") return null;
   return u;
 }

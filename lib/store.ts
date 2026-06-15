@@ -30,9 +30,9 @@ const SERVICES: Service[] = [
 const ALL_SERVICE_IDS = SERVICES.map((s) => s.id);
 
 const BARBERS: Barber[] = [
-  { id: "gavazz", name: "Gavazz", role: "Co-founder & Barbero", specialty: "Fades & diseños", img: "/barbers/br1.jpg", serviceIds: ALL_SERVICE_IDS },
-  { id: "thiago", name: "Thiago", role: "Barbero", specialty: "Clásicos & barba", img: "/barbers/br2.jpg", serviceIds: ALL_SERVICE_IDS },
-  { id: "lucio", name: "Lucio", role: "Barbero", specialty: "Color & platinados", img: "/barbers/br3.jpg", serviceIds: ALL_SERVICE_IDS },
+  { id: "gavazz", name: "Gavazz", role: "Co-founder & Barbero", specialty: "Fades & diseños", img: "/barbers/br1.jpg", serviceIds: ALL_SERVICE_IDS, active: true, userId: "u-gavazz" },
+  { id: "thiago", name: "Thiago", role: "Barbero", specialty: "Clásicos & barba", img: "/barbers/br2.jpg", serviceIds: ALL_SERVICE_IDS, active: true },
+  { id: "lucio", name: "Lucio", role: "Barbero", specialty: "Color & platinados", img: "/barbers/br3.jpg", serviceIds: ALL_SERVICE_IDS, active: true },
 ];
 
 // Abierto todos los días 10–20 con corte 13–14; cada barbero descansa un día.
@@ -71,6 +71,10 @@ const SEED_SPECS: Spec[] = [
   { barberId: "thiago", serviceId: "color", day: -2, hhmm: "14:30", name: "Fran T.", status: "completada", senaMethod: "efectivo", senaPaid: true, saldoMethod: "efectivo" },
   { barberId: "lucio", serviceId: "corte-barba", day: -3, hhmm: "11:30", name: "Maxi A.", status: "completada", senaMethod: "mercadopago", senaPaid: true, saldoMethod: "mercadopago" },
   { barberId: "gavazz", serviceId: "corte", day: -3, hhmm: "17:00", name: "Tomi V.", status: "completada", senaMethod: "mercadopago", senaPaid: true, saldoMethod: "efectivo" },
+  // Hoy
+  { barberId: "lucio", serviceId: "corte", day: 0, hhmm: "10:30", name: "Dilan F.", status: "completada", senaMethod: "efectivo", senaPaid: true, saldoMethod: "efectivo" },
+  { barberId: "gavazz", serviceId: "corte-barba", day: 0, hhmm: "18:00", name: "Ramiro C.", status: "confirmada", senaMethod: "mercadopago", senaPaid: true },
+  { barberId: "thiago", serviceId: "fade", day: 0, hhmm: "16:30", name: "Joaco P.", status: "confirmada", senaMethod: "efectivo", senaPaid: false },
   // Futuros (confirmados, seña cobrada, saldo pendiente)
   { barberId: "gavazz", serviceId: "corte-barba", day: 1, hhmm: "11:00", name: "Mateo R.", status: "confirmada", senaMethod: "mercadopago", senaPaid: true },
   { barberId: "thiago", serviceId: "corte", day: 1, hhmm: "10:30", name: "Agus L.", status: "confirmada", senaMethod: "efectivo", senaPaid: false },
@@ -165,11 +169,79 @@ export function listBarbers(): Barber[] {
 export function getBarber(id: string): Barber | undefined {
   return db().barbers.find((b) => b.id === id);
 }
+/** Solo barberos ACTIVOS ofrecen turnos. */
 export function barbersForService(serviceId: string): Barber[] {
-  return db().barbers.filter((b) => b.serviceIds.includes(serviceId));
+  return db().barbers.filter((b) => b.active && b.serviceIds.includes(serviceId));
+}
+export function getBarberByUserId(userId: string): Barber | undefined {
+  return db().barbers.find((b) => b.userId === userId);
 }
 export function workingHoursFor(barberId: string, weekday: number): WorkingHours | undefined {
   return db().workingHours.find((w) => w.barberId === barberId && w.weekday === weekday);
+}
+export function workingHoursForBarber(barberId: string): WorkingHours[] {
+  return db().workingHours.filter((w) => w.barberId === barberId);
+}
+
+// ---------- ABM: servicios ----------
+export function createService(input: Omit<Service, "id">): Service {
+  const slug = input.name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const svc: Service = { ...input, id: slug || nextId("svc") };
+  db().services.push(svc);
+  // todos los barberos pueden ofrecerlo por defecto
+  for (const b of db().barbers) if (!b.serviceIds.includes(svc.id)) b.serviceIds.push(svc.id);
+  return svc;
+}
+export function updateService(id: string, patch: Partial<Omit<Service, "id">>): Service {
+  const svc = getService(id);
+  if (!svc) throw new Error("Servicio inexistente");
+  Object.assign(svc, patch);
+  return svc;
+}
+export function deleteService(id: string): void {
+  const d = db();
+  d.services = d.services.filter((s) => s.id !== id);
+  for (const b of d.barbers) b.serviceIds = b.serviceIds.filter((s) => s !== id);
+}
+
+// ---------- ABM: barberos ----------
+export function createBarber(input: { name: string; specialty: string; img?: string; active?: boolean; userId?: string; role?: string }): Barber {
+  const slug = input.name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const barber: Barber = {
+    id: db().barbers.some((b) => b.id === slug) ? nextId("barber") : slug || nextId("barber"),
+    name: input.name,
+    role: input.role ?? "Barbero",
+    specialty: input.specialty || "Barbería",
+    img: input.img || "/barbers/br1.jpg",
+    serviceIds: db().services.map((s) => s.id),
+    active: input.active ?? false,
+    userId: input.userId,
+  };
+  db().barbers.push(barber);
+  // Horario por defecto: todos los días 10–20 con corte 13–14
+  for (const wd of [0, 1, 2, 3, 4, 5, 6]) {
+    db().workingHours.push({ barberId: barber.id, weekday: wd, open: "10:00", close: "20:00", breakStart: "13:00", breakEnd: "14:00" });
+  }
+  return barber;
+}
+export function updateBarber(id: string, patch: Partial<Pick<Barber, "name" | "specialty" | "img" | "role">>): Barber {
+  const b = getBarber(id);
+  if (!b) throw new Error("Barbero inexistente");
+  Object.assign(b, patch);
+  return b;
+}
+export function setBarberActive(id: string, active: boolean): Barber {
+  const b = getBarber(id);
+  if (!b) throw new Error("Barbero inexistente");
+  b.active = active;
+  return b;
+}
+
+// ---------- Horarios ----------
+export function setWorkingHours(barberId: string, hours: Omit<WorkingHours, "barberId">[]): void {
+  const d = db();
+  d.workingHours = d.workingHours.filter((w) => w.barberId !== barberId);
+  for (const h of hours) d.workingHours.push({ ...h, barberId });
 }
 
 // ---------- Disponibilidad / holds ----------
@@ -369,8 +441,35 @@ export function findUserByEmail(email: string): User | undefined {
 export function getUser(id: string): User | undefined {
   return db().users.find((u) => u.id === id);
 }
-export function createUser(input: { email: string; name: string; phone: string; password: string }): User {
-  const user: User = { id: nextId("u"), email: input.email, name: input.name, phone: input.phone, password: input.password, role: "cliente" };
+export function createUser(input: {
+  email: string;
+  name: string;
+  phone: string;
+  password: string;
+  role?: "cliente" | "barbero";
+  barberId?: string;
+}): User {
+  const user: User = {
+    id: nextId("u"),
+    email: input.email,
+    name: input.name,
+    phone: input.phone,
+    password: input.password,
+    role: input.role ?? "cliente",
+    barberId: input.barberId,
+  };
   db().users.push(user);
   return user;
+}
+
+/** Auto-registro de barbero: crea usuario (rol barbero) + perfil INACTIVO. */
+export function registerBarber(input: { email: string; name: string; phone: string; password: string }): { user: User; barber: Barber } {
+  const user = createUser({ ...input, role: "barbero" });
+  const barber = createBarber({ name: input.name, specialty: "Barbería", active: false, userId: user.id });
+  user.barberId = barber.id;
+  return { user, barber };
+}
+
+export function listPendingBarbers(): Barber[] {
+  return db().barbers.filter((b) => !b.active);
 }

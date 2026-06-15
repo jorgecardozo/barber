@@ -20,6 +20,8 @@ export interface Barber {
   specialty: string;
   img: string;
   serviceIds: ServiceId[];
+  active: boolean; // el admin lo activa; inactivo = no aparece para reservar
+  userId?: string; // usuario (rol barbero) dueño de este perfil
 }
 
 /** Horario laboral de un barbero para un día de la semana (0=Dom … 6=Sáb). */

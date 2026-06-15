@@ -4,7 +4,7 @@ import { PanelHeader } from "@/components/panel/PanelHeader";
 import { TurnosTable, type TurnoRow } from "@/components/panel/TurnosTable";
 import { requireStaff } from "@/lib/auth";
 import { expireHolds, getBarber, getService, listAllAppointments, listBarbers } from "@/lib/store";
-import { fmtDateShort, fmtTime } from "@/lib/time";
+import { fmtDateShort, fmtTime, todayAR } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Turnos · Panel Flow Site" };
 export const dynamic = "force-dynamic";
@@ -52,7 +52,7 @@ export default async function TurnosPage() {
       <main className="mx-auto max-w-6xl flex-1 px-5 py-8">
         <h1 className="mb-1 font-display text-3xl">Turnos</h1>
         <p className="mb-6 text-sm text-ash">Filtrá, buscá y registrá pagos.</p>
-        <TurnosTable rows={rows} barbers={barbers} />
+        <TurnosTable rows={rows} barbers={barbers} today={todayAR()} />
       </main>
     </>
   );
