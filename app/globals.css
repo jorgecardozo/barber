@@ -231,4 +231,10 @@ body {
   input[type="time"]::-webkit-calendar-picker-indicator:hover {
     opacity: 0.9;
   }
+  /* Cursor de mano en clickeables (los <button> nativos no lo traen por defecto) */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  label:has(> [role="switch"]) {
+    cursor: pointer;
+  }
 }
