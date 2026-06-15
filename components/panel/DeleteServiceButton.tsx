@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { deleteServiceAction } from "@/lib/admin-actions";
@@ -14,8 +15,13 @@ export function DeleteServiceButton({ id, name }: { id: string; name: string }) 
     const fd = new FormData();
     fd.set("id", id);
     start(async () => {
-      await deleteServiceAction(fd);
-      router.refresh();
+      try {
+        await deleteServiceAction(fd);
+        router.refresh();
+        toast.success("Servicio eliminado");
+      } catch {
+        toast.error("No se pudo eliminar el servicio.");
+      }
     });
   }
   return (

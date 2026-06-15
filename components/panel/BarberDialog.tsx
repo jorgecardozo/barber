@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Plus, Pencil, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +31,14 @@ export function BarberDialog({ barber }: { barber?: { id: string; name: string; 
     const fd = new FormData(e.currentTarget);
     if (!editing && active) fd.set("active", "on");
     start(async () => {
-      await (editing ? updateBarberAction(fd) : createBarberAction(fd));
-      router.refresh();
-      setOpen(false);
+      try {
+        await (editing ? updateBarberAction(fd) : createBarberAction(fd));
+        router.refresh();
+        setOpen(false);
+        toast.success(editing ? "Barbero actualizado" : "Barbero creado");
+      } catch {
+        toast.error("No se pudo guardar el barbero.");
+      }
     });
   }
 

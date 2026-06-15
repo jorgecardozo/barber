@@ -3,6 +3,7 @@ import { Anton, Inter } from "next/font/google";
 import "./globals.css";
 import { CursorGlow } from "@/components/CursorGlow";
 import { FloatingCTA } from "@/components/FloatingCTA";
+import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 
 const anton = Anton({
@@ -46,6 +47,7 @@ export default function RootLayout({
         <CursorGlow />
         {children}
         <FloatingCTA />
+        <Toaster />
       </body>
     </html>
   );

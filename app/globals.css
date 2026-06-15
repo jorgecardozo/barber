@@ -178,8 +178,8 @@ body {
   --secondary-foreground: #f4f4f5;
   --muted: #16161d;
   --muted-foreground: #9a9aa3; /* ash */
-  --accent: #16161d;
-  --accent-foreground: #f4f4f5;
+  --accent: #262630; /* hover/focus más visible */
+  --accent-foreground: #ffffff;
   --destructive: #b71717;
   --border: rgba(255, 255, 255, 0.08);
   --input: rgba(255, 255, 255, 0.12);

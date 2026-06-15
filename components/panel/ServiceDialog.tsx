@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Plus, Pencil, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,9 +38,14 @@ export function ServiceDialog({ service }: { service?: ServiceForm }) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     start(async () => {
-      await (editing ? updateServiceAction(fd) : createServiceAction(fd));
-      router.refresh();
-      setOpen(false);
+      try {
+        await (editing ? updateServiceAction(fd) : createServiceAction(fd));
+        router.refresh();
+        setOpen(false);
+        toast.success(editing ? "Servicio actualizado" : "Servicio creado");
+      } catch {
+        toast.error("No se pudo guardar el servicio.");
+      }
     });
   }
 

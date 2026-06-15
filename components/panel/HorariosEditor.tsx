@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Loader2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,9 +60,14 @@ export function HorariosEditor({
       }
     });
     start(async () => {
-      await setWorkingHoursAction(fd);
-      router.refresh();
-      setSaved(true);
+      try {
+        await setWorkingHoursAction(fd);
+        router.refresh();
+        setSaved(true);
+        toast.success("Horarios guardados");
+      } catch {
+        toast.error("No se pudieron guardar los horarios.");
+      }
     });
   }
 

@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { format } from "date-fns";
-import { MoreHorizontal, Loader2 } from "lucide-react";
+import { MoreHorizontal, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -104,13 +105,25 @@ export function TurnosTable({
       .sort((a, b) => b.startMs - a.startMs);
   }, [rows, q, barberId, status, method, dateKey]);
 
-  function run(action: (fd: FormData) => Promise<void>, id: string, extra?: Record<string, string>) {
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(0);
+  useEffect(() => setPage(0), [q, barberId, status, method, dateKey]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages - 1);
+  const paged = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  function run(action: (fd: FormData) => Promise<void>, id: string, msg: string, extra?: Record<string, string>) {
     startTransition(async () => {
       const fd = new FormData();
       fd.set("id", id);
       if (extra) for (const [k, v] of Object.entries(extra)) fd.set(k, v);
-      await action(fd);
-      router.refresh();
+      try {
+        await action(fd);
+        router.refresh();
+        toast.success(msg);
+      } catch {
+        toast.error("No se pudo completar la acción. Probá de nuevo.");
+      }
     });
   }
 
@@ -168,7 +181,7 @@ export function TurnosTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((r) => (
+            {paged.map((r) => (
               <TableRow key={r.id}>
                 <TableCell className="whitespace-nowrap">
                   <span className="text-foreground">{r.dateLabel}</span>
@@ -206,6 +219,20 @@ export function TurnosTable({
           </TableBody>
         </Table>
       </div>
+
+      {totalPages > 1 && (
+        <div className="mt-4 flex items-center justify-between text-sm">
+          <span className="text-muted-foreground">Página {safePage + 1} de {totalPages}</span>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={safePage === 0}>
+              <ChevronLeft className="h-4 w-4" /> Anterior
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={safePage >= totalPages - 1}>
+              Siguiente <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -228,7 +255,7 @@ function RowActions({
   disabled,
 }: {
   row: TurnoRow;
-  run: (action: (fd: FormData) => Promise<void>, id: string, extra?: Record<string, string>) => void;
+  run: (action: (fd: FormData) => Promise<void>, id: string, msg: string, extra?: Record<string, string>) => void;
   disabled: boolean;
 }) {
   const cancel = row.status === "cancelada" || row.status === "completada";
@@ -244,20 +271,20 @@ function RowActions({
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
         {row.depositStatus === "pendiente" && (
-          <DropdownMenuItem onSelect={() => run(registrarSenaEfectivoAction, row.id)}>Cobrar seña (efectivo)</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => run(registrarSenaEfectivoAction, row.id, "Seña cobrada en efectivo")}>Cobrar seña (efectivo)</DropdownMenuItem>
         )}
         {row.balanceStatus === "pendiente" && (
           <>
-            <DropdownMenuItem onSelect={() => run(registrarSaldoAction, row.id, { method: "efectivo" })}>Cobrar saldo (efectivo)</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => run(registrarSaldoAction, row.id, { method: "mercadopago" })}>Cobrar saldo (MercadoPago)</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => run(registrarSaldoAction, row.id, "Saldo cobrado en efectivo", { method: "efectivo" })}>Cobrar saldo (efectivo)</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => run(registrarSaldoAction, row.id, "Saldo cobrado por MercadoPago", { method: "mercadopago" })}>Cobrar saldo (MercadoPago)</DropdownMenuItem>
           </>
         )}
         {row.status === "confirmada" && (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => run(panelSetStatusAction, row.id, { status: "completada" })}>Marcar como hecho</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => run(panelSetStatusAction, row.id, { status: "no_show" })}>Marcar ausente</DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onSelect={() => run(panelSetStatusAction, row.id, { status: "cancelada" })}>Cancelar turno</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => run(panelSetStatusAction, row.id, "Turno marcado como hecho", { status: "completada" })}>Marcar como hecho</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => run(panelSetStatusAction, row.id, "Turno marcado como ausente", { status: "no_show" })}>Marcar ausente</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onSelect={() => run(panelSetStatusAction, row.id, "Turno cancelado", { status: "cancelada" })}>Cancelar turno</DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>

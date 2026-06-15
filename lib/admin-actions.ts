@@ -6,6 +6,7 @@ import {
   createBarber,
   createService,
   createUser,
+  createWalkIn,
   deleteService,
   findUserByEmail,
   getBarber,
@@ -16,7 +17,7 @@ import {
   updateService,
 } from "./store";
 import { getSessionUser, requireAdmin, requireStaff, setSession } from "./auth";
-import type { WorkingHours } from "./types";
+import type { PaymentMethod, WorkingHours } from "./types";
 
 // ---------------- Auth: Google (simulado) + registro barbero ----------------
 export async function loginGoogleAction(formData: FormData) {
@@ -43,6 +44,22 @@ export async function registerBarberAction(formData: FormData) {
   const { user } = registerBarber({ email, name, phone, password });
   await setSession(user.id);
   redirect("/panel"); // mostrará "pendiente de activación"
+}
+
+// ---------------- Alta de turno por staff (walk-in) ----------------
+export async function crearTurnoWalkInAction(formData: FormData) {
+  if (!(await requireStaff())) redirect("/panel/ingresar");
+  createWalkIn({
+    serviceId: String(formData.get("serviceId") || ""),
+    barberId: String(formData.get("barberId") || ""),
+    startISO: String(formData.get("startISO") || ""),
+    customerName: String(formData.get("customerName") || "").trim(),
+    customerPhone: String(formData.get("customerPhone") || "").trim(),
+    depositMethod: String(formData.get("depositMethod") || "efectivo") as PaymentMethod,
+    depositPaid: formData.get("depositPaid") === "on",
+  });
+  revalidatePath("/panel/turnos");
+  revalidatePath("/panel");
 }
 
 // ---------------- ABM Servicios (admin + barbero) ----------------
