@@ -19,32 +19,31 @@ export function PanelHeader({ user, active }: { user: User; active: TabKey }) {
   const items = NAV.filter((n) => !n.adminOnly || user.role === "admin");
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-2.5">
-        <div className="flex items-center gap-5 overflow-x-auto">
-          <Link href="/panel" className="shrink-0 font-display text-lg tracking-wide">
-            FLOW <span className="chrome-text italic">PANEL</span>
-          </Link>
-          <nav className="flex items-center gap-1">
-            {items.map((n) => {
-              const Icon = n.icon;
-              const on = active === n.key;
-              return (
-                <Link
-                  key={n.key}
-                  href={n.href}
-                  className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                    on ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Icon className="h-4 w-4" />
-                  <span className="hidden sm:inline">{n.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
-          <span className="hidden text-sm text-muted-foreground md:inline">
+      <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-5">
+        <Link href="/panel" className="shrink-0 font-display text-base tracking-wide sm:text-lg">
+          FLOW <span className="chrome-text italic">PANEL</span>
+        </Link>
+        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {items.map((n) => {
+            const Icon = n.icon;
+            const on = active === n.key;
+            return (
+              <Link
+                key={n.key}
+                href={n.href}
+                title={n.label}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3 ${
+                  on ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className="hidden lg:inline">{n.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="hidden text-sm text-muted-foreground lg:inline">
             {user.name} · <span className="text-flow-cyan">{user.role}</span>
           </span>
           <form action={logoutAction}>

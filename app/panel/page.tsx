@@ -79,7 +79,7 @@ export default async function PanelPage() {
   return (
     <>
       <PanelHeader user={staff} active="dashboard" />
-      <main className="mx-auto max-w-6xl flex-1 px-6 py-10 lg:px-8">
+      <main className="mx-auto max-w-6xl min-w-0 flex-1 overflow-x-clip px-6 py-10 lg:px-8">
         <h1 className="font-display text-3xl">Dashboard</h1>
         <p className="mb-6 text-sm text-muted-foreground capitalize">{fmtDateLong(todayAR())}</p>
 
@@ -94,7 +94,7 @@ export default async function PanelPage() {
 
         <section className="mt-8">
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-flow-cyan">Por barbero</h2>
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {porBarbero.map((b) => (
               <Card key={b.id}>
                 <CardContent className="flex items-center gap-3 py-4">

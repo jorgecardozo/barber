@@ -3,8 +3,6 @@
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   Label,
@@ -13,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { motion } from "motion/react";
 import {
   ChartContainer,
   ChartTooltip,
@@ -20,6 +19,7 @@ import {
   type ChartConfig,
 } from "@/components/ui/chart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 type Barbero = { id: string; name: string; img: string; ingreso: number; cortes: number };
 type Metodo = { name: string; key: string; value: number };
@@ -27,22 +27,6 @@ type Dia = { label: string; ingreso: number };
 
 const ars = (n: number) =>
   new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS", maximumFractionDigits: 0 }).format(n);
-
-function AvatarTick({ x, y, payload, avatars }: any) {
-  const b = avatars[payload.value] as Barbero | undefined;
-  const id = `clip-${payload.value}`;
-  return (
-    <g transform={`translate(${x},${y})`}>
-      <defs>
-        <clipPath id={id}>
-          <circle cx="0" cy="20" r="16" />
-        </clipPath>
-      </defs>
-      {b && <image href={b.img} x={-16} y={4} width={32} height={32} clipPath={`url(#${id})`} preserveAspectRatio="xMidYMid slice" />}
-      <text x={0} y={54} textAnchor="middle" fill="var(--foreground)" fontSize={12} fontWeight={600}>{b?.name ?? payload.value}</text>
-    </g>
-  );
-}
 
 export function DashboardCharts({
   porBarbero,
@@ -53,11 +37,9 @@ export function DashboardCharts({
   porMetodo: Metodo[];
   porDia: Dia[];
 }) {
-  const avatars: Record<string, Barbero> = Object.fromEntries(porBarbero.map((b) => [b.id, b]));
-  const barData = porBarbero.map((b) => ({ id: b.id, ingreso: b.ingreso }));
   const totalMetodo = porMetodo.reduce((s, m) => s + m.value, 0);
+  const maxIngreso = Math.max(1, ...porBarbero.map((b) => b.ingreso));
 
-  const barConfig = { ingreso: { label: "Ingresos", color: "var(--chart-1)" } } satisfies ChartConfig;
   const diaConfig = { ingreso: { label: "Ingresos", color: "var(--chart-1)" } } satisfies ChartConfig;
   const metodoConfig = {
     mercadopago: { label: "MercadoPago", color: "var(--chart-3)" },
@@ -72,26 +54,37 @@ export function DashboardCharts({
             Ingresos por barbero
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ChartContainer config={barConfig} className="h-[280px] w-full">
-            <BarChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 44 }}>
-              <defs>
-                <linearGradient id="barFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--chart-1)" stopOpacity={1} />
-                  <stop offset="100%" stopColor="var(--chart-1)" stopOpacity={0.5} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.06)" />
-              <XAxis dataKey="id" tickLine={false} axisLine={false} interval={0} height={64} tick={(p) => <AvatarTick {...p} avatars={avatars} />} />
-              <YAxis tickFormatter={(v) => ars(v)} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} axisLine={false} tickLine={false} width={72} />
-              <ChartTooltip cursor={{ fill: "rgba(255,255,255,0.04)" }} content={<ChartTooltipContent formatter={(v) => ars(Number(v))} />} />
-              <Bar dataKey="ingreso" fill="url(#barFill)" radius={[8, 8, 0, 0]} maxBarSize={72} isAnimationActive={false} />
-            </BarChart>
-          </ChartContainer>
+        <CardContent className="space-y-3">
+          {porBarbero.map((b) => {
+            const pct = Math.max(3, Math.round((b.ingreso / maxIngreso) * 100));
+            return (
+              <div key={b.id} className="flex items-center gap-3">
+                <Avatar className="h-9 w-9 shrink-0">
+                  <AvatarImage src={b.img} alt={b.name} />
+                  <AvatarFallback>{b.name[0]}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate font-medium">{b.name}</span>
+                    <span className="shrink-0 font-medium text-flow-cyan">{ars(b.ingreso)}</span>
+                  </div>
+                  <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-secondary">
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ background: "linear-gradient(90deg, var(--chart-1), color-mix(in srgb, var(--chart-1) 55%, transparent))" }}
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.7, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold uppercase tracking-[0.15em] text-flow-cyan">

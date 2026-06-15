@@ -77,20 +77,18 @@ export function HorariosEditor({
       {ORDER.map((wd) => {
         const d = days[wd];
         return (
-          <div key={wd} className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-border bg-card px-4 py-3">
-            <div className="flex w-32 items-center gap-2">
+          <div key={wd} className="rounded-lg border border-border bg-card p-4">
+            <div className="flex items-center gap-2">
               <Switch checked={!d.closed} onCheckedChange={(v) => patch(wd, { closed: !v })} />
-              <span className={d.closed ? "text-muted-foreground" : "text-foreground"}>{DAY_NAMES[wd]}</span>
+              <span className={d.closed ? "text-muted-foreground" : "font-medium text-foreground"}>{DAY_NAMES[wd]}</span>
+              {d.closed && <span className="ml-auto text-sm text-muted-foreground">Cerrado</span>}
             </div>
-            {d.closed ? (
-              <span className="text-sm text-muted-foreground">Cerrado</span>
-            ) : (
-              <div className="flex flex-wrap items-center gap-2 text-sm">
+            {!d.closed && (
+              <div className="mt-3 grid grid-cols-2 gap-3 lg:grid-cols-4">
                 <TimeField label="Abre" value={d.open} onChange={(v) => patch(wd, { open: v })} />
                 <TimeField label="Cierra" value={d.close} onChange={(v) => patch(wd, { close: v })} />
-                <span className="mx-1 text-muted-foreground">·</span>
-                <TimeField label="Corte de" value={d.breakStart} onChange={(v) => patch(wd, { breakStart: v })} />
-                <TimeField label="a" value={d.breakEnd} onChange={(v) => patch(wd, { breakEnd: v })} />
+                <TimeField label="Corte desde" value={d.breakStart} onChange={(v) => patch(wd, { breakStart: v })} />
+                <TimeField label="Corte hasta" value={d.breakEnd} onChange={(v) => patch(wd, { breakEnd: v })} />
               </div>
             )}
           </div>
@@ -111,9 +109,9 @@ export function HorariosEditor({
 
 function TimeField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <label className="flex items-center gap-1.5">
+    <label className="flex flex-col gap-1">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <Input type="time" value={value} onChange={(e) => onChange(e.target.value)} className="h-8 w-[110px]" />
+      <Input type="time" value={value} onChange={(e) => onChange(e.target.value)} className="h-9 w-full" />
     </label>
   );
 }

@@ -63,7 +63,7 @@ export function ColaView({ barbers, single, serverNow }: { barbers: BarberQueue[
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-display text-3xl">Cola del día</h1>
           <p className="text-sm text-muted-foreground">Atendé, cobrá y llamá al siguiente.</p>
@@ -89,7 +89,7 @@ export function ColaView({ barbers, single, serverNow }: { barbers: BarberQueue[
           <SingleQueue barber={selectedBarber} />
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {barbers.map((b) => <BarberCard key={b.id} barber={b} onClick={() => setSelected(b.id)} />)}
         </div>
       )}
@@ -127,7 +127,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,360px)_1fr]">
       {/* Sillón */}
       <motion.div layout className="relative overflow-hidden rounded-3xl border border-flow-cyan/25 bg-card p-6">
         <div className="mb-2 flex items-center gap-2">
@@ -197,10 +197,10 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
                 <AvatarImage src={avatarUrl(siguiente.client)} alt={siguiente.client} />
                 <AvatarFallback>{siguiente.client[0]}</AvatarFallback>
               </Avatar>
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-300">Siguiente</span>
-                <p className="font-display text-2xl leading-tight">{siguiente.client}</p>
-                <p className="text-sm text-muted-foreground">{siguiente.service} · turno {siguiente.time}</p>
+                <p className="truncate font-display text-2xl leading-tight">{siguiente.client}</p>
+                <p className="truncate text-sm text-muted-foreground">{siguiente.service} · turno {siguiente.time}</p>
               </div>
               <div className="flex flex-col gap-2">
                 <Button size="sm" disabled={!!atendiendo || pending} onClick={() => sentar(siguiente)}>

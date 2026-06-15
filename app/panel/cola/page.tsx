@@ -45,7 +45,7 @@ export default async function ColaPage() {
   return (
     <>
       <PanelHeader user={staff} active="cola" />
-      <main className="mx-auto max-w-6xl flex-1 px-6 py-10 lg:px-8">
+      <main className="mx-auto max-w-6xl min-w-0 flex-1 overflow-x-clip px-6 py-10 lg:px-8">
         <ColaView barbers={data} single={single} serverNow={nowMs()} />
       </main>
     </>

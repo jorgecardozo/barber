@@ -168,8 +168,9 @@ export function TurnosTable({
         {filtered.length} turno(s){pending && <Loader2 className="h-3 w-3 animate-spin" />}
       </p>
 
-      <div className="overflow-x-auto rounded-xl border border-border">
-        <Table className="min-w-[860px]">
+      {/* Tabla (desktop) */}
+      <div className="hidden overflow-x-auto rounded-xl border border-border md:block">
+        <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead>Fecha</TableHead>
@@ -220,6 +221,44 @@ export function TurnosTable({
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Tarjetas (mobile) */}
+      <div className="space-y-2 md:hidden">
+        {paged.map((r) => (
+          <div key={r.id} className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-medium text-foreground">{r.customerName}</p>
+                <p className="text-xs text-muted-foreground">{r.customerPhone}</p>
+              </div>
+              <Badge variant="outline" className={BADGE[r.status]}>{statusLabel(r.status)}</Badge>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+              <span className="text-foreground">{r.dateLabel} · {r.time}</span>
+              <span>{r.barberName}</span>
+              <span>{r.serviceName}</span>
+            </div>
+            <div className="mt-3 flex items-end justify-between gap-2">
+              <div className="grid grid-cols-2 gap-x-4 text-sm">
+                <div>
+                  <span className="text-xs text-muted-foreground">Seña</span>
+                  <p className="text-foreground">{formatARS(r.depositCents)}</p>
+                  <PayHint status={r.depositStatus} method={r.depositMethod} />
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Saldo</span>
+                  <p className="text-foreground">{formatARS(r.balanceCents)}</p>
+                  <PayHint status={r.balanceStatus} method={r.balanceMethod} />
+                </div>
+              </div>
+              <RowActions row={r} run={run} disabled={pending} />
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <p className="rounded-xl border border-border bg-card px-4 py-10 text-center text-muted-foreground">No hay turnos con esos filtros.</p>
+        )}
       </div>
 
       {totalPages > 1 && (
