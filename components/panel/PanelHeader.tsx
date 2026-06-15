@@ -1,13 +1,14 @@
 import Link from "next/link";
-import { LayoutDashboard, CalendarDays, Scissors, Users, Clock, LogOut } from "lucide-react";
+import { LayoutDashboard, CalendarDays, Scissors, Users, Clock, LogOut, ListOrdered } from "lucide-react";
 import { logoutAction } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import type { User } from "@/lib/types";
 
-type TabKey = "dashboard" | "turnos" | "servicios" | "barberos" | "horarios";
+type TabKey = "dashboard" | "cola" | "turnos" | "servicios" | "barberos" | "horarios";
 
 const NAV: { key: TabKey; href: string; label: string; icon: React.ElementType; adminOnly?: boolean }[] = [
   { key: "dashboard", href: "/panel", label: "Dashboard", icon: LayoutDashboard },
+  { key: "cola", href: "/panel/cola", label: "Cola", icon: ListOrdered },
   { key: "turnos", href: "/panel/turnos", label: "Turnos", icon: CalendarDays },
   { key: "servicios", href: "/panel/servicios", label: "Servicios", icon: Scissors },
   { key: "barberos", href: "/panel/barberos", label: "Barberos", icon: Users, adminOnly: true },

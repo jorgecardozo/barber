@@ -58,6 +58,49 @@ export function availableSlots(barberId: string, serviceId: string, dateStr: str
   return slots;
 }
 
+export interface DaySlot {
+  hhmm: string;
+  startISO: string;
+  available: boolean; // false = ocupado o ya pasó
+}
+
+/** Grilla completa del día: muestra TODOS los slots, marcando ocupados vs libres. */
+export function daySlotGrid(barberId: string, serviceId: string, dateStr: string): DaySlot[] {
+  const svc = getService(serviceId);
+  if (!svc) return [];
+  const wh = workingHoursFor(barberId, weekdayOf(dateStr));
+  if (!wh) return [];
+
+  const openMin = hhmmToMin(wh.open);
+  const closeMin = hhmmToMin(wh.close);
+  const breakStart = wh.breakStart ? hhmmToMin(wh.breakStart) : null;
+  const breakEnd = wh.breakEnd ? hhmmToMin(wh.breakEnd) : null;
+  const dur = svc.durationMin;
+  const bufferMs = DECISIONS.bufferMinutes * 60_000;
+  const step = DECISIONS.slotGranularityMinutes;
+  const leadMs = DECISIONS.leadTimeMinutes * 60_000;
+  const now = nowMs();
+
+  const active = activeAppointmentsForBarber(barberId).map((a) => ({ s: Date.parse(a.start), e: Date.parse(a.end) }));
+  const grid: DaySlot[] = [];
+  for (let m = openMin; m + dur <= closeMin; m += step) {
+    const slotEndMin = m + dur;
+    if (breakStart !== null && breakEnd !== null && m < breakEnd && slotEndMin > breakStart) continue; // corte mediodía
+    const startD = arDateTime(dateStr, minToHHMM(m));
+    const startMs = startD.getTime();
+    const endMs = startMs + dur * 60_000;
+    const past = startMs < now + leadMs;
+    const conflict = active.some((a) => startMs < a.e + bufferMs && a.s - bufferMs < endMs);
+    grid.push({ hhmm: minToHHMM(m), startISO: startD.toISOString(), available: !past && !conflict });
+  }
+  return grid;
+}
+
+/** Cantidad de horarios disponibles por día en el horizonte (para el calendario). */
+export function horizonAvailability(barberId: string, serviceId: string): { date: string; count: number }[] {
+  return horizonDates().map((d) => ({ date: d, count: availableSlots(barberId, serviceId, d).length }));
+}
+
 /** ¿Tiene el barbero al menos un slot disponible en el horizonte? */
 export function hasAvailabilityInHorizon(barberId: string, serviceId: string): boolean {
   const start = todayAR();

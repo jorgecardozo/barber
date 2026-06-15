@@ -18,6 +18,7 @@ type Service = {
 type Barber = { id: string; name: string; specialty: string; img: string; serviceIds: string[] };
 type DateOpt = { value: string; weekday: string; day: string; long: string };
 type Slot = { hhmm: string; startISO: string };
+type DaySlot = { hhmm: string; startISO: string; available: boolean };
 
 const STEPS = ["Servicio", "Barbero", "Día y hora", "Confirmar"];
 
@@ -39,26 +40,45 @@ export function BookingWizard({
   const [barberId, setBarberId] = useState<string | null>(null);
   const [date, setDate] = useState<string | null>(null);
   const [slot, setSlot] = useState<Slot | null>(null);
-  const [slots, setSlots] = useState<Slot[] | null>(null);
+  const [grid, setGrid] = useState<DaySlot[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resumen, setResumen] = useState<Record<string, number>>({});
   const [metodo, setMetodo] = useState<"mercadopago" | "efectivo">("mercadopago");
 
   const service = services.find((s) => s.id === serviceId) ?? null;
   const barber = barbers.find((b) => b.id === barberId) ?? null;
   const dateOpt = dates.find((d) => d.value === date) ?? null;
 
-  // Cargar slots cuando hay barbero + fecha
+  // Resumen de disponibilidad por día (para el calendario "de un vistazo")
+  useEffect(() => {
+    if (step !== 3 || !barberId || !serviceId) return;
+    let cancel = false;
+    fetch(`/api/disponibilidad?barber=${barberId}&service=${serviceId}&resumen=1`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancel) return;
+        const map: Record<string, number> = {};
+        for (const x of d.dias ?? []) map[x.date] = x.count;
+        setResumen(map);
+      })
+      .catch(() => {});
+    return () => {
+      cancel = true;
+    };
+  }, [step, barberId, serviceId]);
+
+  // Grilla del día (ocupados + libres)
   useEffect(() => {
     if (step !== 3 || !barberId || !serviceId || !date) return;
     let cancel = false;
     setLoading(true);
-    setSlots(null);
+    setGrid(null);
     fetch(`/api/disponibilidad?barber=${barberId}&service=${serviceId}&date=${date}`)
       .then((r) => r.json())
       .then((d) => {
-        if (!cancel) setSlots(d.slots ?? []);
+        if (!cancel) setGrid(d.grid ?? []);
       })
-      .catch(() => !cancel && setSlots([]))
+      .catch(() => !cancel && setGrid([]))
       .finally(() => !cancel && setLoading(false));
     return () => {
       cancel = true;
@@ -179,51 +199,85 @@ export function BookingWizard({
         <div>
           <BackBar onClick={() => setStep(2)} label={`Barbero: ${barber?.name}`} />
 
-          <p className="mb-2 text-sm text-ash">Elegí el día</p>
+          <p className="mb-2 text-sm text-ash">
+            Elegí el día <span className="text-ash/60">· abajo de cada día ves cuántos horarios quedan libres</span>
+          </p>
           <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
-            {dates.map((d) => (
-              <button
-                key={d.value}
-                onClick={() => {
-                  setDate(d.value);
-                  setSlot(null);
-                }}
-                className={`flex min-w-[64px] shrink-0 flex-col items-center rounded-xl border px-3 py-2 transition-colors ${
-                  date === d.value
-                    ? "border-flow-red bg-flow-red/10 text-bone"
-                    : "border-white/10 text-ash hover:border-white/25"
-                }`}
-              >
-                <span className="text-[11px] uppercase">{d.weekday}</span>
-                <span className="font-display text-lg">{d.day}</span>
-              </button>
-            ))}
+            {dates.map((d) => {
+              const count = resumen[d.value];
+              const full = count === 0;
+              return (
+                <button
+                  key={d.value}
+                  onClick={() => {
+                    if (full) return;
+                    setDate(d.value);
+                    setSlot(null);
+                  }}
+                  disabled={full}
+                  className={`flex min-w-[70px] shrink-0 flex-col items-center rounded-xl border px-3 py-2 transition-colors ${
+                    date === d.value
+                      ? "border-flow-red bg-flow-red/10 text-bone"
+                      : full
+                        ? "cursor-not-allowed border-white/5 text-ash/40"
+                        : "border-white/10 text-ash hover:border-white/25"
+                  }`}
+                >
+                  <span className="text-[11px] uppercase">{d.weekday}</span>
+                  <span className="font-display text-lg">{d.day}</span>
+                  <span className={`mt-0.5 text-[10px] ${full ? "text-ash/40" : "text-flow-cyan"}`}>
+                    {count === undefined ? "·" : full ? "lleno" : `${count} libres`}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {date && (
             <>
-              <p className="mb-2 text-sm text-ash">Horarios disponibles</p>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-sm text-ash">Horarios</p>
+                <div className="flex items-center gap-3 text-[11px] text-ash">
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border border-flow-cyan/40 bg-flow-cyan/15" /> Libre</span>
+                  <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-white/8" /> Ocupado</span>
+                </div>
+              </div>
               {loading && <p className="py-6 text-center text-sm text-ash">Buscando horarios…</p>}
-              {!loading && slots && slots.length === 0 && (
+              {!loading && grid && grid.length === 0 && (
                 <p className="rounded-xl border border-white/10 bg-ink-2 px-4 py-6 text-center text-sm text-ash">
-                  No hay horarios este día para {barber?.name}. Probá otro día. 🗓️
+                  {barber?.name} no atiende este día. Probá otro. 🗓️
                 </p>
               )}
-              {!loading && slots && slots.length > 0 && (
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                  {slots.map((s) => (
-                    <button
-                      key={s.startISO}
-                      onClick={() => {
-                        setSlot(s);
-                        setStep(4);
-                      }}
-                      className="rounded-lg border border-white/10 bg-ink-2 py-2.5 text-sm font-medium transition-colors hover:border-flow-cyan/50 hover:text-flow-cyan"
-                    >
-                      {s.hhmm}
-                    </button>
-                  ))}
-                </div>
+              {!loading && grid && grid.length > 0 && (
+                <>
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                    {grid.map((s) =>
+                      s.available ? (
+                        <button
+                          key={s.startISO}
+                          onClick={() => {
+                            setSlot({ hhmm: s.hhmm, startISO: s.startISO });
+                            setStep(4);
+                          }}
+                          className="rounded-lg border border-flow-cyan/30 bg-flow-cyan/10 py-2.5 text-sm font-medium text-flow-cyan transition-colors hover:border-flow-cyan hover:bg-flow-cyan/20"
+                        >
+                          {s.hhmm}
+                        </button>
+                      ) : (
+                        <div
+                          key={s.startISO}
+                          title="Ocupado"
+                          className="rounded-lg border border-white/5 bg-white/[0.04] py-2.5 text-center text-sm text-ash/40 line-through"
+                        >
+                          {s.hhmm}
+                        </div>
+                      ),
+                    )}
+                  </div>
+                  {grid.every((s) => !s.available) && (
+                    <p className="mt-3 text-center text-sm text-ash">Todo ocupado este día. Probá otro. 🗓️</p>
+                  )}
+                </>
               )}
             </>
           )}

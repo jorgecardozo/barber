@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/AppHeader";
 import { BookingWizard } from "@/components/reservar/BookingWizard";
 import { getSessionUser } from "@/lib/auth";
@@ -17,6 +18,9 @@ export default async function ReservarPage({
 }) {
   const sp = await searchParams;
   const user = await getSessionUser();
+
+  // El cliente tiene que estar logueado ANTES de reservar.
+  if (!user) redirect("/ingresar?next=/reservar");
 
   const services = listServices().map((s) => ({
     id: s.id,
