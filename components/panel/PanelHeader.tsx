@@ -19,11 +19,11 @@ export function PanelHeader({ user, active }: { user: User; active: TabKey }) {
   const items = NAV.filter((n) => !n.adminOnly || user.role === "admin");
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-5">
+      <div className="relative mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-5">
         <Link href="/panel" className="shrink-0 font-display text-base tracking-wide sm:text-lg">
           <span className="chrome-text italic">FLOW SITE</span>
         </Link>
-        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:absolute md:left-1/2 md:max-w-[56%] md:flex-none md:-translate-x-1/2 md:justify-center md:overflow-visible">
           {items.map((n) => {
             const Icon = n.icon;
             const on = active === n.key;
@@ -42,7 +42,7 @@ export function PanelHeader({ user, active }: { user: User; active: TabKey }) {
             );
           })}
         </nav>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <span className="hidden text-sm text-muted-foreground lg:inline">
             {user.name} · <span className="text-flow-cyan">{user.role}</span>
           </span>
