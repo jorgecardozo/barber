@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { MoreHorizontal, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { es } from "date-fns/locale";
+import { MoreHorizontal, Loader2, ChevronLeft, ChevronRight, Search, SlidersHorizontal, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -90,8 +92,44 @@ export function TurnosTable({
   const [status, setStatus] = useState("todos");
   const [method, setMethod] = useState("todos");
   const [date, setDate] = useState<Date | undefined>(new Date(today + "T12:00:00"));
+  const [showFilters, setShowFilters] = useState(false);
 
   const dateKey = date ? format(date, "yyyy-MM-dd") : null;
+  const isTodayKey = dateKey === today;
+  const hayFiltros =
+    q.trim() !== "" || barberId !== "todos" || status !== "todos" || method !== "todos" || !isTodayKey;
+  const activeCount =
+    (q.trim() !== "" ? 1 : 0) +
+    (barberId !== "todos" ? 1 : 0) +
+    (status !== "todos" ? 1 : 0) +
+    (method !== "todos" ? 1 : 0) +
+    (!isTodayKey ? 1 : 0);
+  function limpiar() {
+    setQ("");
+    setBarberId("todos");
+    setStatus("todos");
+    setMethod("todos");
+    setDate(new Date(today + "T12:00:00"));
+  }
+  const activeChips: { key: string; label: string; clear: () => void }[] = [
+    q.trim() !== "" && { key: "q", label: `"${q.trim()}"`, clear: () => setQ("") },
+    barberId !== "todos" && {
+      key: "barber",
+      label: barbers.find((b) => b.id === barberId)?.name ?? "Barbero",
+      clear: () => setBarberId("todos"),
+    },
+    status !== "todos" && {
+      key: "status",
+      label: statusLabel(status as AppointmentStatus),
+      clear: () => setStatus("todos"),
+    },
+    method !== "todos" && { key: "method", label: METODO[method] ?? method, clear: () => setMethod("todos") },
+    !isTodayKey && {
+      key: "date",
+      label: date ? format(date, "d 'de' MMM", { locale: es }) : "Todas las fechas",
+      clear: () => setDate(new Date(today + "T12:00:00")),
+    },
+  ].filter(Boolean) as { key: string; label: string; clear: () => void }[];
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -131,41 +169,130 @@ export function TurnosTable({
 
   return (
     <div>
-      {/* Filtros */}
-      <div className="mb-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-        <Input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar cliente / teléfono"
-          className="lg:col-span-1"
-        />
-        <Select value={barberId} onValueChange={setBarberId}>
-          <SelectTrigger><SelectValue placeholder="Barbero" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos los barberos</SelectItem>
-            {barbers.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={status} onValueChange={setStatus}>
-          <SelectTrigger><SelectValue placeholder="Estado" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos los estados</SelectItem>
-            {ESTADOS.map((s) => <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={method} onValueChange={setMethod}>
-          <SelectTrigger><SelectValue placeholder="Método" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos los métodos</SelectItem>
-            <SelectItem value="mercadopago">MercadoPago</SelectItem>
-            <SelectItem value="efectivo">Efectivo</SelectItem>
-          </SelectContent>
-        </Select>
-        <DatePicker value={date} onChange={setDate} placeholder="Todas las fechas" />
+      {/* ============ FILTROS ============ */}
+      <div className="mb-3">
+        {/* Fila 1: buscador (siempre) + botón Filtros (solo mobile) */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Buscar cliente o teléfono"
+              aria-label="Buscar cliente o teléfono"
+              className="pl-9"
+            />
+          </div>
+
+          {/* Toggle "Filtros" — SOLO mobile. size=default = h-8 para alinear con el Input. */}
+          <Button
+            type="button"
+            variant="outline"
+            size="default"
+            onClick={() => setShowFilters((s) => !s)}
+            aria-expanded={showFilters}
+            aria-controls="turnos-filtros"
+            className="shrink-0 sm:hidden"
+          >
+            <SlidersHorizontal className="size-4" />
+            Filtros
+            {activeCount > 0 && (
+              <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-flow-cyan px-1 text-[11px] leading-none font-semibold text-background">
+                {activeCount}
+              </span>
+            )}
+          </Button>
+        </div>
+
+        {/* Controles: ocultos en mobile salvo showFilters; SIEMPRE visibles en sm+. */}
+        <div
+          id="turnos-filtros"
+          className={cn(
+            "mt-2 gap-2 sm:flex sm:flex-wrap sm:items-center",
+            showFilters ? "flex flex-wrap items-center" : "hidden"
+          )}
+        >
+          <Select value={barberId} onValueChange={setBarberId}>
+            <SelectTrigger aria-label="Filtrar por barbero" className="w-full sm:w-44">
+              <SelectValue placeholder="Barbero" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los barberos</SelectItem>
+              {barbers.map((b) => (
+                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={status} onValueChange={setStatus}>
+            <SelectTrigger aria-label="Filtrar por estado" className="w-full sm:w-44">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los estados</SelectItem>
+              {ESTADOS.map((s) => (
+                <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={method} onValueChange={setMethod}>
+            <SelectTrigger aria-label="Filtrar por método de pago" className="w-full sm:w-48">
+              <SelectValue placeholder="Método" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los métodos</SelectItem>
+              <SelectItem value="mercadopago">MercadoPago</SelectItem>
+              <SelectItem value="efectivo">Efectivo</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <DatePicker
+            value={date}
+            onChange={setDate}
+            placeholder="Todas las fechas"
+            className="w-full sm:w-52"
+          />
+
+          {/* Limpiar — único, condicional. En sm+ vive acá (al final de la fila). */}
+          {hayFiltros && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="default"
+              onClick={limpiar}
+              className="hidden text-muted-foreground hover:text-foreground sm:ml-auto sm:inline-flex"
+            >
+              <X className="size-4" />
+              Limpiar filtros
+            </Button>
+          )}
+        </div>
+
+        {/* Chips removibles de filtros activos. Visibles en TODOS los breakpoints. */}
+        {activeChips.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {activeChips.map((chip) => (
+              <FilterChip key={chip.key} label={chip.label} onClear={chip.clear} />
+            ))}
+            {/* Limpiar para mobile, junto a los chips (en sm+ ya está arriba). */}
+            <button
+              type="button"
+              onClick={limpiar}
+              className="inline-flex h-6 items-center rounded-full px-2 text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline sm:hidden"
+            >
+              Limpiar
+            </button>
+          </div>
+        )}
       </div>
 
+      {/* Conteo de resultados */}
       <p className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
-        {filtered.length} turno(s){pending && <Loader2 className="h-3 w-3 animate-spin" />}
+        <span>
+          <span className="font-medium text-foreground">{filtered.length}</span> turno{filtered.length === 1 ? "" : "s"}
+        </span>
+        {pending && <Loader2 className="size-3 animate-spin" />}
       </p>
 
       {/* Tabla (desktop) */}
@@ -280,6 +407,22 @@ export function TurnosTable({
 
 function statusLabel(s: AppointmentStatus): string {
   return ESTADOS.find((e) => e.v === s)?.l ?? s;
+}
+
+function FilterChip({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <span className="inline-flex h-6 items-center gap-1 rounded-full border border-flow-cyan/40 bg-flow-cyan/10 py-0 pr-1 pl-2.5 text-xs text-flow-cyan">
+      <span className="max-w-[10rem] truncate">{label}</span>
+      <button
+        type="button"
+        onClick={onClear}
+        aria-label={`Quitar filtro ${label}`}
+        className="inline-flex size-4 items-center justify-center rounded-full text-flow-cyan/80 transition-colors hover:bg-flow-cyan/20 hover:text-flow-cyan"
+      >
+        <X className="size-3" />
+      </button>
+    </span>
+  );
 }
 
 function PayHint({ status, method }: { status: "pendiente" | "pagado"; method: string | null }) {
