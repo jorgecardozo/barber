@@ -28,6 +28,7 @@ type QueueItem = {
   status: string;
   balanceCents: number;
   balancePaid: boolean;
+  avatar?: string;
 };
 type BarberQueue = { id: string; name: string; img: string; items: QueueItem[] };
 
@@ -49,6 +50,10 @@ function waLink(phone: string, client: string): string {
 // Avatar ilustrado y determinístico por nombre (DiceBear)
 function avatarUrl(name: string): string {
   return `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(name)}&radius=50`;
+}
+// Usa el avatar que armó el cliente; si no, uno por su nombre
+function avOf(i: QueueItem): string {
+  return i.avatar ?? avatarUrl(i.client);
 }
 
 export function ColaView({ barbers, single, serverNow }: { barbers: BarberQueue[]; single: boolean; serverNow: number }) {
@@ -136,7 +141,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
         </div>
 
         <div className="flex flex-col items-center">
-          <BarberChair occupied={!!atendiendo} avatar={atendiendo ? avatarUrl(atendiendo.client) : undefined} name={atendiendo?.client} />
+          <BarberChair occupied={!!atendiendo} avatar={atendiendo ? avOf(atendiendo) : undefined} name={atendiendo?.client} />
           <AnimatePresence mode="wait">
             {atendiendo ? (
               <motion.div key={atendiendo.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="-mt-2 text-center">
@@ -194,7 +199,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
           {siguiente && (
             <motion.div key={siguiente.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -28, transition: { duration: 0.18 } }} transition={{ type: "spring", stiffness: 320, damping: 26 }} className="mb-4 flex items-center gap-4 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4">
               <Avatar className="h-14 w-14 ring-2 ring-amber-400/40">
-                <AvatarImage src={avatarUrl(siguiente.client)} alt={siguiente.client} />
+                <AvatarImage src={avOf(siguiente)} alt={siguiente.client} />
                 <AvatarFallback>{siguiente.client[0]}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
@@ -227,7 +232,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
               <motion.li key={i.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -28, transition: { duration: 0.18 } }} transition={{ type: "spring", stiffness: 340, damping: 26 }} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-secondary font-display text-xs text-muted-foreground">{idx + 2}</span>
                 <Avatar className="h-10 w-10 shrink-0">
-                  <AvatarImage src={avatarUrl(i.client)} alt={i.client} />
+                  <AvatarImage src={avOf(i)} alt={i.client} />
                   <AvatarFallback>{i.client[0]}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
@@ -330,7 +335,7 @@ function BarberCard({ barber, onClick }: { barber: BarberQueue; onClick: () => v
         {atendiendo ? (
           <div className="mt-1 flex items-center gap-2">
             <Avatar className="h-9 w-9 ring-1 ring-flow-cyan/40">
-              <AvatarImage src={avatarUrl(atendiendo.client)} alt={atendiendo.client} />
+              <AvatarImage src={avOf(atendiendo)} alt={atendiendo.client} />
               <AvatarFallback>{atendiendo.client[0]}</AvatarFallback>
             </Avatar>
             <div>

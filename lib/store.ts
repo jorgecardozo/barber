@@ -177,14 +177,14 @@ function buildSeed(): { appointments: Appointment[]; payments: Payment[] } {
   // ----- Relleno de HOY: ~7 turnos por barbero para una cola bien realista -----
   const todayDate = todayAR();
   const todayWd = weekdayOf(todayDate);
-  const todayTimes = ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
-  const fillServices = SERVICES.filter((s) => s.durationMin <= 45);
+  const todayTimes = ["10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30"];
+  const fillServices = SERVICES.filter((s) => s.durationMin <= 30);
   for (const b of activeBarbers) {
     const wh = WORKING_HOURS.find((w) => w.barberId === b.id && w.weekday === todayWd);
     if (!wh) continue;
     let kept = 0;
     for (const hhmm of todayTimes) {
-      if (rand() < 0.18) continue; // saltea ~1-2 → ~7-8 por barbero, variado
+      if (rand() < 0.06) continue; // ~17-18 por barbero, con leve variación
       const svc = fillServices[Math.floor(rand() * fillServices.length)];
       const start = arDateTime(todayDate, hhmm);
       const end = new Date(start.getTime() + svc.durationMin * 60_000);
@@ -591,6 +591,10 @@ export function findUserByEmail(email: string): User | undefined {
 }
 export function getUser(id: string): User | undefined {
   return db().users.find((u) => u.id === id);
+}
+export function setUserAvatar(userId: string, url: string): void {
+  const u = getUser(userId);
+  if (u) u.avatarUrl = url;
 }
 export function createUser(input: {
   email: string;

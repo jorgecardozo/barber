@@ -18,8 +18,24 @@ export function AppHeader({ user }: { user: User | null }) {
               <Link href="/mis-turnos" className="rounded-full px-3 py-1.5 text-ash transition-colors hover:text-bone">
                 Mis turnos
               </Link>
-              <span className="hidden text-ash sm:inline">·</span>
-              <span className="hidden text-bone sm:inline">{user.name.split(" ")[0]}</span>
+              <Link
+                href="/perfil"
+                title="Editar mi avatar"
+                className="flex items-center gap-2 rounded-full px-1.5 py-1 transition-colors hover:bg-white/5"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={
+                    user.avatarUrl ??
+                    `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(user.name)}&radius=50`
+                  }
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="h-7 w-7 rounded-full border border-white/15 bg-ink-2"
+                />
+                <span className="hidden text-bone sm:inline">{user.name.split(" ")[0]}</span>
+              </Link>
               <form action={logoutAction}>
                 <button className="rounded-full border border-white/10 px-3 py-1.5 text-ash transition-colors hover:text-bone">
                   Salir

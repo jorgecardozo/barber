@@ -79,6 +79,7 @@ export interface User {
   password: string; // ⚠️ simulado en texto plano; en prod = Supabase Auth (hash)
   role: Role;
   barberId?: BarberId;
+  avatarUrl?: string; // avatar personalizado (DiceBear)
 }
 
 export interface Payment {

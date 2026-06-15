@@ -13,6 +13,7 @@ import {
   registrarSaldo,
   registrarSenaEfectivo,
   setAppointmentStatus,
+  setUserAvatar,
   SlotTakenError,
 } from "./store";
 import { clearSession, getSessionUser, requireStaff, setSession } from "./auth";
@@ -52,6 +53,18 @@ export async function registerAction(formData: FormData) {
 export async function logoutAction() {
   await clearSession();
   redirect("/");
+}
+
+/** Guarda el avatar personalizado del cliente. */
+export async function guardarAvatarAction(formData: FormData) {
+  const user = await getSessionUser();
+  if (!user) redirect("/ingresar?next=/perfil");
+  const url = String(formData.get("avatarUrl") || "");
+  if (url.startsWith("https://api.dicebear.com/")) {
+    setUserAvatar(user.id, url);
+  }
+  revalidatePath("/perfil");
+  revalidatePath("/mis-turnos");
 }
 
 // ---------------- Reserva ----------------

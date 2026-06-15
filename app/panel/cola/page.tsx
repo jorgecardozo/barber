@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { PanelHeader } from "@/components/panel/PanelHeader";
 import { ColaView } from "@/components/panel/ColaView";
 import { requireStaff } from "@/lib/auth";
-import { appointmentsOnDate, getBarberByUserId, getService, listBarbers } from "@/lib/store";
+import { appointmentsOnDate, getBarberByUserId, getService, getUser, listBarbers } from "@/lib/store";
 import { fmtTime, nowMs, todayAR } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Cola · Panel Flow Site" };
@@ -39,6 +39,7 @@ export default async function ColaPage() {
         status: a.status,
         balanceCents: a.priceCents - a.depositCents,
         balancePaid: a.balanceStatus === "pagado",
+        avatar: (a.customerId && getUser(a.customerId)?.avatarUrl) || undefined,
       })),
   }));
 
