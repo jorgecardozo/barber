@@ -256,7 +256,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
   );
 }
 
-/* ---------- Escena: barbero parado + cliente sentado en el sillón ---------- */
+/* ---------- Escena: retrato del cliente en el sillón + barbero al lado ---------- */
 function BarberChair({
   occupied,
   avatar,
@@ -270,22 +270,22 @@ function BarberChair({
   barberAvatar?: string;
   barberName?: string;
 }) {
-  const accent = occupied ? "var(--chart-2)" : "rgba(255,255,255,0.14)";
-  const bob = { y: [0, -2, 0] };
+  const accent = occupied ? "var(--chart-2)" : "rgba(255,255,255,0.16)";
+  const bob = { y: [0, -2.5, 0] };
   const bobT = { duration: 3.4, repeat: Infinity, ease: "easeInOut" as const };
   return (
-    <div className="relative mx-auto my-1 aspect-[300/290] w-72 max-w-full">
+    <div className="relative mx-auto my-1 aspect-[260/240] w-64 max-w-full">
       {/* halo sobre el cliente */}
       {occupied && (
         <motion.div
           className="absolute inset-0"
-          style={{ background: "radial-gradient(circle at 63% 33%, color-mix(in srgb, var(--chart-2) 24%, transparent) 0%, transparent 55%)" }}
+          style={{ background: "radial-gradient(circle at 66% 40%, color-mix(in srgb, var(--chart-2) 26%, transparent) 0%, transparent 56%)" }}
           animate={{ opacity: [0.45, 0.85, 0.45], scale: [0.97, 1.05, 0.97] }}
           transition={{ duration: 2.6, repeat: Infinity }}
         />
       )}
 
-      <svg viewBox="0 0 300 290" className="relative h-full w-full">
+      <svg viewBox="0 0 260 240" className="relative h-full w-full">
         <defs>
           <linearGradient id="bc-chrome" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="#3a3a44" />
@@ -297,103 +297,29 @@ function BarberChair({
             <stop offset="0%" stopColor="#c33a2c" />
             <stop offset="100%" stopColor="#7c1f17" />
           </linearGradient>
-          <linearGradient id="bc-cape" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#25252e" />
-            <stop offset="100%" stopColor="#121217" />
-          </linearGradient>
         </defs>
 
         {/* sombras en el piso */}
-        <ellipse cx="188" cy="277" rx="84" ry="11" fill="rgba(0,0,0,0.45)" />
-        {barberAvatar && <ellipse cx="64" cy="270" rx="42" ry="8" fill="rgba(0,0,0,0.4)" />}
+        <ellipse cx="170" cy="226" rx="72" ry="9" fill="rgba(0,0,0,0.45)" />
+        {barberAvatar && <ellipse cx="52" cy="214" rx="30" ry="6" fill="rgba(0,0,0,0.4)" />}
 
-        {/* ===== BARBERO PARADO (a la izquierda) ===== */}
-        {barberAvatar && (
-          <>
-            {/* piernas + zapatos */}
-            <rect x="50" y="206" width="12" height="56" rx="5" fill="#2b313c" />
-            <rect x="68" y="206" width="12" height="56" rx="5" fill="#2b313c" />
-            <rect x="43" y="258" width="23" height="9" rx="3" fill="#16161c" />
-            <rect x="64" y="258" width="23" height="9" rx="3" fill="#16161c" />
-            {/* torso (remera oscura) */}
-            <path d="M42 120 Q64 110 86 120 L90 160 L38 160 Z" fill="#2b313c" />
-            {/* brazo izquierdo que cae */}
-            <path d="M45 126 Q33 152 37 180" fill="none" stroke="#2b313c" strokeWidth="11" strokeLinecap="round" />
-            {/* delantal blanco */}
-            <path d="M48 120 L80 120 L85 208 Q64 216 43 208 Z" fill="#eef1f5" stroke="rgba(0,0,0,0.10)" strokeWidth="1" />
-            <path d="M54 112 L57 121 M74 112 L71 121" stroke="#d7dde4" strokeWidth="2.5" strokeLinecap="round" />
-            {/* bolsillo + peine cyan */}
-            <rect x="52" y="162" width="24" height="20" rx="3" fill="#e0e5eb" stroke="#c4cad2" strokeWidth="1" />
-            <rect x="56" y="152" width="4" height="14" rx="2" fill="var(--chart-2)" />
-            <rect x="62" y="154" width="4" height="12" rx="2" fill="#cfd5dc" />
-            {/* cuello */}
-            <rect x="58" y="106" width="12" height="10" rx="3" fill="#f0c9a8" />
-            {/* brazo que trabaja */}
-            {occupied ? (
-              <>
-                <path d="M84 124 Q126 102 158 102" fill="none" stroke="#2b313c" strokeWidth="11" strokeLinecap="round" />
-                <circle cx="160" cy="102" r="6.5" fill="#f0c9a8" />
-              </>
-            ) : (
-              <path d="M84 126 Q96 152 92 180" fill="none" stroke="#2b313c" strokeWidth="11" strokeLinecap="round" />
-            )}
-          </>
-        )}
-
-        {/* ===== SILLÓN ===== */}
-        {/* base cromada + apoyapiés */}
-        <rect x="179" y="206" width="18" height="48" rx="4" fill="url(#bc-chrome)" />
-        <rect x="134" y="252" width="108" height="9" rx="4.5" fill="url(#bc-chrome)" />
-        <circle cx="138" cy="261" r="6" fill="#24242b" stroke="url(#bc-chrome)" strokeWidth="2" />
-        <circle cx="238" cy="261" r="6" fill="#24242b" stroke="url(#bc-chrome)" strokeWidth="2" />
-        <rect x="152" y="233" width="72" height="7" rx="3.5" fill="url(#bc-chrome)" />
-
-        {/* respaldo de cuero rojo */}
-        <rect x="144" y="60" width="88" height="130" rx="24" fill="url(#bc-leather)" stroke={accent} strokeWidth="2" />
-        <rect x="153" y="68" width="70" height="42" rx="16" fill="rgba(255,255,255,0.06)" />
+        {/* sillón: base cromada + apoyapiés */}
+        <rect x="162" y="168" width="16" height="42" rx="4" fill="url(#bc-chrome)" />
+        <rect x="126" y="206" width="88" height="8" rx="4" fill="url(#bc-chrome)" />
+        <circle cx="130" cy="214" r="5.5" fill="#24242b" stroke="url(#bc-chrome)" strokeWidth="2" />
+        <circle cx="210" cy="214" r="5.5" fill="#24242b" stroke="url(#bc-chrome)" strokeWidth="2" />
+        <rect x="140" y="190" width="60" height="6" rx="3" fill="url(#bc-chrome)" />
+        {/* respaldo de cuero rojo (enmarca el retrato) */}
+        <rect x="116" y="30" width="108" height="138" rx="28" fill="url(#bc-leather)" stroke={accent} strokeWidth="2" />
+        <rect x="126" y="40" width="88" height="46" rx="20" fill="rgba(255,255,255,0.06)" />
         {/* asiento */}
-        <rect x="138" y="178" width="100" height="24" rx="10" fill="url(#bc-leather)" stroke={accent} strokeWidth="1.5" />
-
-        {/* ===== CLIENTE SENTADO ===== */}
-        {occupied && (
-          <motion.g animate={bob} transition={bobT}>
-            {/* piernas + zapatillas */}
-            <rect x="163" y="186" width="18" height="52" rx="8" fill="#4a5568" />
-            <rect x="195" y="186" width="18" height="52" rx="8" fill="#4a5568" />
-            <rect x="156" y="230" width="30" height="12" rx="5" fill="#eceef2" />
-            <rect x="156" y="230" width="30" height="4.5" rx="2.25" fill="#cdd2db" />
-            <rect x="190" y="230" width="30" height="12" rx="5" fill="#eceef2" />
-            <rect x="190" y="230" width="30" height="4.5" rx="2.25" fill="#cdd2db" />
-            {/* capa cubriendo el cuerpo */}
-            <path
-              d="M188 116 C170 116 158 127 154 151 L150 186 Q188 197 226 186 L222 151 C218 127 206 116 188 116 Z"
-              fill="url(#bc-cape)"
-              stroke={accent}
-              strokeWidth="1.4"
-            />
-            <path d="M188 126 L188 203" stroke="rgba(255,255,255,0.05)" strokeWidth="2" />
-            <path d="M176 120 Q188 134 200 120" fill="none" stroke="var(--chart-2)" strokeWidth="2" opacity="0.65" />
-          </motion.g>
-        )}
-
-        {/* apoyabrazos al frente */}
-        <rect x="130" y="172" width="14" height="34" rx="7" fill="#202028" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
-        <rect x="232" y="172" width="14" height="34" rx="7" fill="#202028" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
+        <rect x="122" y="150" width="96" height="22" rx="10" fill="url(#bc-leather)" stroke={accent} strokeWidth="1.5" />
+        {/* apoyabrazos */}
+        <rect x="106" y="120" width="14" height="40" rx="7" fill="#202028" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
+        <rect x="220" y="120" width="14" height="40" rx="7" fill="#202028" stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
       </svg>
 
-      {/* Cabeza del barbero (su avatar) */}
-      {barberAvatar && (
-        <div className="absolute left-[21.3%] top-[29%] aspect-square w-[17%] -translate-x-1/2 -translate-y-1/2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={barberAvatar}
-            alt={barberName}
-            className="h-full w-full rounded-full border-2 border-white/25 bg-[#0c0c12] object-cover"
-          />
-        </div>
-      )}
-
-      {/* Cabeza del cliente (su cara real, asomando de la capa) */}
+      {/* Avatar del cliente: retrato grande dentro del sillón */}
       <AnimatePresence>
         {occupied && (
           <motion.div
@@ -402,27 +328,49 @@ function BarberChair({
             animate={{ opacity: 1, scale: 1, ...bob }}
             exit={{ opacity: 0, scale: 0.85 }}
             transition={{ y: bobT, default: { duration: 0.45, type: "spring", stiffness: 200, damping: 18 } }}
-            className="absolute left-[62.7%] top-[31.4%] aspect-square w-[21%] -translate-x-1/2 -translate-y-1/2"
+            className="absolute left-[65.4%] top-[40%] aspect-square w-[39%] -translate-x-1/2 -translate-y-1/2"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={avatar}
               alt={name}
-              className="h-full w-full rounded-full border-2 border-flow-cyan/70 bg-[#0c0c12] object-cover shadow-[0_0_18px_color-mix(in_srgb,var(--chart-2)_45%,transparent)]"
+              className="h-full w-full rounded-full border-[3px] border-flow-cyan/70 bg-[#0c0c12] object-cover shadow-[0_0_22px_color-mix(in_srgb,var(--chart-2)_50%,transparent)]"
             />
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Tijera del barbero haciendo snip (cerca de la cabeza del cliente) */}
-      {occupied && barberAvatar && (
+      {/* Tijera haciendo snip cuando atiende */}
+      {occupied && (
         <motion.div
-          className="absolute left-[53%] top-[28%] text-flow-cyan drop-shadow-[0_0_6px_var(--chart-2)]"
+          className="absolute left-[47%] top-[30%] text-flow-cyan drop-shadow-[0_0_6px_var(--chart-2)]"
           animate={{ rotate: [0, -26, 0], y: [0, -2, 0] }}
           transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }}
         >
-          <Scissors className="h-5 w-5" />
+          <Scissors className="h-6 w-6" />
         </motion.div>
+      )}
+
+      {/* Barbero: avatar limpio al lado, con badge de tijera */}
+      {barberAvatar && (
+        <>
+          <div className="absolute left-[20%] top-[45%] aspect-square w-[24%] -translate-x-1/2 -translate-y-1/2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={barberAvatar}
+              alt={barberName}
+              className="h-full w-full rounded-full border-2 border-white/25 bg-[#0c0c12] object-cover"
+            />
+            <span className="absolute -right-0.5 -bottom-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-flow-cyan text-background ring-2 ring-card">
+              <Scissors className="h-3 w-3" />
+            </span>
+          </div>
+          {barberName && (
+            <span className="absolute left-[20%] top-[62%] -translate-x-1/2 whitespace-nowrap text-[11px] font-medium text-muted-foreground">
+              {barberName.split(" ")[0]}
+            </span>
+          )}
+        </>
       )}
     </div>
   );
