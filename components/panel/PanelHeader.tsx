@@ -46,6 +46,21 @@ export function PanelHeader({ user, active }: { user: User; active: TabKey }) {
           <span className="hidden text-sm text-muted-foreground lg:inline">
             {user.name} · <span className="text-flow-cyan">{user.role}</span>
           </span>
+          <Link
+            href="/perfil"
+            title="Mi avatar"
+            className="shrink-0 rounded-full ring-offset-2 ring-offset-background transition hover:ring-2 hover:ring-flow-cyan/50"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={
+                user.avatarUrl ??
+                `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(user.name)}&radius=50`
+              }
+              alt="Mi avatar"
+              className="h-8 w-8 rounded-full border border-border bg-background"
+            />
+          </Link>
           <form action={logoutAction}>
             <Button variant="outline" size="sm">
               <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Salir</span>

@@ -26,6 +26,9 @@ export default async function ColaPage() {
     id: b.id,
     name: b.name,
     img: b.img,
+    barberAvatar:
+      (b.userId && getUser(b.userId)?.avatarUrl) ||
+      `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(b.name)}&radius=50`,
     items: appts
       .filter((a) => a.barberId === b.id)
       .map((a) => ({

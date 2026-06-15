@@ -15,6 +15,7 @@ import {
   setAppointmentStatus,
   setUserAvatar,
   SlotTakenError,
+  updateBarber,
 } from "./store";
 import { clearSession, getSessionUser, requireStaff, setSession } from "./auth";
 import { DECISIONS } from "./decisions";
@@ -62,9 +63,15 @@ export async function guardarAvatarAction(formData: FormData) {
   const url = String(formData.get("avatarUrl") || "");
   if (url.startsWith("https://api.dicebear.com/")) {
     setUserAvatar(user.id, url);
+    // Si es barbero, su avatar se usa también en su perfil público (dashboard, cola, etc.)
+    if (user.role === "barbero" && user.barberId) {
+      updateBarber(user.barberId, { img: url });
+    }
   }
   revalidatePath("/perfil");
   revalidatePath("/mis-turnos");
+  revalidatePath("/panel");
+  revalidatePath("/panel/cola");
 }
 
 // ---------------- Reserva ----------------
