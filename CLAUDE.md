@@ -8,9 +8,10 @@ perfumes árabes. Local en San José Obrero 993. Dos partes:
 1. **Landing pública** (`/`) — identidad de marca, servicios, barberos, fragancias, ubicación.
 2. **App de turnos** — reserva online (cliente), panel de gestión (barbero/admin) y cola en vivo.
 
-> ⚠️ **Backend SIMULADO.** Hoy todo corre con datos en memoria (`lib/store.ts`); no hay
-> Supabase ni MercadoPago reales conectados. El SQL de producción existe en `supabase/`
-> pero **no está cableado**. Ver "Estado del backend".
+> **Backend: Supabase (real).** `lib/store.ts` y `lib/auth.ts` consultan Supabase
+> (no más simulación en memoria). Se desarrolla/verifica contra **Supabase local**
+> (`npx supabase start` + Docker). **MercadoPago sigue simulado** (`/reservar/pago`).
+> Ver "Estado del backend" y `docs/SUPABASE-SETUP.md`.
 
 ## Comandos
 
@@ -31,11 +32,19 @@ No hay tests. La verificación es **visual** (ver "Verificación").
 - **recharts** para gráficos del dashboard.
 - **react-day-picker v9** (pineado) · **sonner** (toasts) · **date-fns** · **lucide-react** · **DiceBear** (avatares, vía URL).
 
-## Estado del backend (simulado)
+## Estado del backend (Supabase)
 
-- `lib/store.ts` es el "backend": singleton en `globalThis.__flowDB` con PRNG determinístico (`mulberry32`) para el seed. Reinicia con el proceso.
-- Seed: ~10 barberos, servicios, horarios y turnos (incluye relleno del día de hoy, ~18/barbero, para ver la cola llena).
-- `supabase/migrations/0001-0003 + seed.sql` y `docs/SUPABASE-SETUP.md`: esquema de producción validado contra Postgres pero **sin integrar**. Cablearlo es el próximo gran paso pendiente.
+- `lib/store.ts` = capa de datos: queries Supabase (async) vía **cliente service_role**
+  (`lib/supabase/admin.ts`, server-only). Mapea filas del esquema a `lib/types.ts`.
+  La autorización la imponen las server actions; la RLS protege la API pública.
+- `lib/auth.ts` = sesión real (Supabase Auth → `profiles` → `User`). `middleware.ts` la refresca.
+- Esquema en `supabase/migrations/0001-0004` (`0004` = puente: `en_curso`, `avatar_url`,
+  `payments.kind/method`). `seed.sql` siembra catálogo; `scripts/seed-dev.mjs` crea los
+  usuarios de auth + turnos demo para local.
+- **Dev local**: `npx supabase start` (Docker) → `npx supabase status -o env` → pegar en
+  `.env.local` → `node scripts/seed-dev.mjs` → `npm run dev`. Studio en :54323.
+- **Pendiente**: MercadoPago real (webhook), Google OAuth (`/auth/callback` + provider),
+  crons. Ver `docs/SUPABASE-SETUP.md`.
 
 ## Arquitectura
 

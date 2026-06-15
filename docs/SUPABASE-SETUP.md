@@ -13,6 +13,57 @@ disponibilidad/holds, §7 pagos, §15 T&C, §16 rate-limit, §17 observabilidad)
 
 ---
 
+## ✅ Estado: la app YA está cableada a Supabase
+
+La app **ya no usa el backend simulado**: `lib/store.ts` y `lib/auth.ts` consultan
+Supabase real. Verificado contra Supabase **local** (login real, reserva end-to-end,
+dashboard/cola/mis-turnos con datos reales y RLS).
+
+**Cómo está cableado**
+- `lib/supabase/server.ts` / `client.ts` — clientes SSR (sesión por cookies).
+- `lib/supabase/admin.ts` — cliente `service_role` (server-only) que usa `lib/store.ts`
+  para las operaciones de datos. La **autorización** la imponen las server actions
+  (`requireStaff`/`getSessionUser`); la **RLS** protege la API pública (anon key).
+- `lib/auth.ts` — sesión con Supabase Auth → `profiles` → tipo `User` (rol, `barberId`).
+- `middleware.ts` — refresca la sesión en cada request.
+- `0004_app_bridge.sql` — puente app↔esquema: estado `en_curso`, `profiles.avatar_url`,
+  `payments.kind`/`method` (cobros efectivo/saldo del panel).
+- Reservas: insert directo protegido por el `EXCLUDE` (`23P01` → "horario tomado").
+  Las RPC `crear_hold`/`slots_publicos` quedan disponibles para el futuro path anónimo.
+
+**Variables** (`.env.local`, ver §5): `NEXT_PUBLIC_SUPABASE_URL`,
+`NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`. Plantilla en
+`.env.local.example`.
+
+### Desarrollo local (con Docker)
+```bash
+npx supabase start              # levanta Postgres+Auth+Studio (aplica migraciones+seed)
+npx supabase status -o env      # imprime API URL + anon + service_role → pegar en .env.local
+node scripts/seed-dev.mjs       # crea usuarios de auth (admin/barberos/cliente) + turnos demo
+npm run dev                     # la app corre contra el Supabase local
+npx supabase stop               # frenar (los datos persisten)
+```
+Studio: http://127.0.0.1:54323 · El SQL `seed.sql` NO crea usuarios de `auth`
+(eso lo hace `scripts/seed-dev.mjs` o el dashboard).
+
+### Ir a la NUBE (producción)
+1. Crear el proyecto (§1) y `npx supabase link --project-ref <ref>`.
+2. `npx supabase db push` (aplica `0001`→`0004`). Correr `seed.sql` (datos reales, §4).
+3. Crear el admin/barberos reales (Authentication → Add user) y promover roles (§4).
+4. Pegar las keys del proyecto cloud en las env del hosting (Vercel/Cloudflare).
+
+### ⏳ Lo que falta para producción
+- **MercadoPago real**: hoy `/reservar/pago` es SIMULADO (`payDepositMercadoPago` marca
+  pagado sin cobro). Falta: preference + Checkout + webhook (`/api/webhooks/mp`) que
+  confirme y escriba `payments` con `service_role`.
+- **Google OAuth**: `loginGoogleAction` ya llama a `signInWithOAuth`, pero falta
+  habilitar el provider en Supabase y un route handler `/auth/callback` que intercambie
+  el code. Sin eso, el botón de Google no completa.
+- **Crons** (§7): `expire_holds`, reconciliación de pagos, recordatorios (pg_cron o Vercel Cron).
+- **Contenido real**: fotos/precios/horarios/teléfonos reales (reemplazar `seed.sql`).
+
+---
+
 ## 0. Orden de archivos
 
 ```
