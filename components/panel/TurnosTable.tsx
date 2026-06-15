@@ -268,15 +268,15 @@ function RowActions({
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="min-w-56">
         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
         {row.depositStatus === "pendiente" && (
-          <DropdownMenuItem onSelect={() => run(registrarSenaEfectivoAction, row.id, "Seña cobrada en efectivo")}>Cobrar seña (efectivo)</DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => run(registrarSenaEfectivoAction, row.id, "Seña cobrada en efectivo")}>Cobrar seña</DropdownMenuItem>
         )}
         {row.balanceStatus === "pendiente" && (
           <>
-            <DropdownMenuItem onSelect={() => run(registrarSaldoAction, row.id, "Saldo cobrado en efectivo", { method: "efectivo" })}>Cobrar saldo (efectivo)</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => run(registrarSaldoAction, row.id, "Saldo cobrado por MercadoPago", { method: "mercadopago" })}>Cobrar saldo (MercadoPago)</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => run(registrarSaldoAction, row.id, "Saldo cobrado en efectivo", { method: "efectivo" })}>Saldo en efectivo</DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => run(registrarSaldoAction, row.id, "Saldo cobrado por MercadoPago", { method: "mercadopago" })}>Saldo por MercadoPago</DropdownMenuItem>
           </>
         )}
         {row.status === "confirmada" && (
