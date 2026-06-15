@@ -42,7 +42,7 @@ export default async function HorariosPage({
   return (
     <>
       <PanelHeader user={staff} active="horarios" />
-      <main className="mx-auto max-w-3xl flex-1 px-5 py-8">
+      <main className="mx-auto max-w-3xl flex-1 px-6 py-10 lg:px-8">
         <h1 className="mb-1 font-display text-3xl">Horarios</h1>
         <p className="mb-6 text-sm text-muted-foreground">Definí los días y horas de atención.</p>
 

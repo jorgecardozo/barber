@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
-import { Check, X, UserPlus, Zap, Loader2 } from "lucide-react";
+import { Check, X, UserPlus, Zap, Loader2, Scissors } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -179,7 +179,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
         {/* Siguiente */}
         <AnimatePresence mode="popLayout">
           {siguiente && (
-            <motion.div key={siguiente.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -24 }} className="mb-4 flex items-center gap-4 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4">
+            <motion.div key={siguiente.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -28, transition: { duration: 0.18 } }} transition={{ type: "spring", stiffness: 320, damping: 26 }} className="mb-4 flex items-center gap-4 rounded-2xl border border-amber-400/30 bg-amber-400/5 p-4">
               <div className="flex-1">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-300">Siguiente</span>
                 <p className="font-display text-2xl leading-tight">{siguiente.client}</p>
@@ -207,7 +207,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
         <motion.ol layout className="space-y-2">
           <AnimatePresence>
             {espera.map((i, idx) => (
-              <motion.li key={i.id} layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -24 }} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
+              <motion.li key={i.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, x: -28, transition: { duration: 0.18 } }} transition={{ type: "spring", stiffness: 340, damping: 26 }} className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary font-display text-sm">{idx + 2}</span>
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{i.client}</p>
@@ -240,6 +240,16 @@ function BarberChair({ occupied }: { occupied: boolean }) {
           transition={{ duration: 2.2, repeat: Infinity }}
         />
       )}
+      {/* Tijera haciendo snip */}
+      {occupied && (
+        <motion.div
+          className="absolute left-[54%] top-[22%] text-flow-cyan drop-shadow-[0_0_6px_var(--chart-2)]"
+          animate={{ rotate: [0, -24, 0], y: [0, -2, 0] }}
+          transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <Scissors className="h-5 w-5" />
+        </motion.div>
+      )}
       <svg viewBox="0 0 160 180" className="relative h-full w-full">
         {/* base */}
         <ellipse cx="80" cy="162" rx="46" ry="9" fill="#15151c" />
@@ -256,7 +266,14 @@ function BarberChair({ occupied }: { occupied: boolean }) {
         {/* persona */}
         <AnimatePresence>
           {occupied && (
-            <motion.g key="persona" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 8 }}>
+            <motion.g
+              key="persona"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0, scale: [1, 1.035, 1] }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ scale: { duration: 3.2, repeat: Infinity, ease: "easeInOut" }, default: { duration: 0.4 } }}
+              style={{ transformOrigin: "80px 80px" }}
+            >
               <circle cx="80" cy="60" r="15" fill="var(--chart-2)" opacity="0.9" />
               <path d="M58 98 q22 -24 44 0 z" fill="var(--chart-2)" opacity="0.9" />
               {/* capa de corte */}

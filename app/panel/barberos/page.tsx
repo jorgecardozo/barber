@@ -24,7 +24,7 @@ export default async function BarberosPage() {
   return (
     <>
       <PanelHeader user={admin} active="barberos" />
-      <main className="mx-auto max-w-5xl flex-1 px-5 py-8">
+      <main className="mx-auto max-w-5xl flex-1 px-6 py-10 lg:px-8">
         <div className="mb-6 flex items-end justify-between">
           <div>
             <h1 className="font-display text-3xl">Barberos</h1>
