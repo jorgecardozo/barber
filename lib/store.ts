@@ -32,7 +32,7 @@ const ALL_SERVICE_IDS = SERVICES.map((s) => s.id);
 const BARBER_DEFS = [
   { id: "gavazz", name: "Gavazz", role: "Co-founder & Barbero", specialty: "Fades & diseños", active: true, userId: "u-gavazz", off: 0 },
   { id: "thiago", name: "Thiago", role: "Barbero", specialty: "Clásicos & barba", active: true, off: 1 },
-  { id: "lucio", name: "Lucio", role: "Barbero", specialty: "Color & platinados", active: true, off: 2 },
+  { id: "lucio", name: "Lucio", role: "Barbero", specialty: "Color & platinados", active: true, off: 2, userId: "u-barbero-demo" },
   { id: "brian", name: "Brian", role: "Barbero", specialty: "Degradados a piel", active: true, off: 3 },
   { id: "mati", name: "Mati", role: "Barbero", specialty: "Barba & ritual", active: true, off: 0 },
   { id: "nacho", name: "Nacho", role: "Barbero", specialty: "Cortes urbanos", active: true, off: 1 },
@@ -64,6 +64,7 @@ const WORKING_HOURS: WorkingHours[] = BARBER_DEFS.flatMap((d) =>
 const SEED_USERS: User[] = [
   { id: "u-admin", email: "admin@flowsite.com", name: "Admin Flow", phone: "5492995550000", password: "admin123", role: "admin" },
   { id: "u-gavazz", email: "gavazz@flowsite.com", name: "Gavazz", phone: "5492995550001", password: "barber123", role: "barbero", barberId: "gavazz" },
+  { id: "u-barbero-demo", email: "barbero@demo.com", name: "Lucio", phone: "5492995550002", password: "barbero123", role: "barbero", barberId: "lucio" },
   { id: "u-ramiro", email: "ramiro@flowsite.com", name: "Ramiro", phone: "5492995550009", password: "barber123", role: "barbero", barberId: "ramiro" },
   { id: "u-cliente", email: "cliente@demo.com", name: "Cliente Demo", phone: "5492995551234", password: "cliente123", role: "cliente" },
 ];
@@ -98,6 +99,7 @@ function buildSeed(): { appointments: Appointment[]; payments: Payment[] } {
   let pSeq = 0;
 
   for (let day = -28; day <= 12; day++) {
+    if (day === 0) continue; // hoy se rellena aparte (cola realista)
     const date = addDays(todayAR(), day);
     const wd = weekdayOf(date);
     for (const b of activeBarbers) {
@@ -172,6 +174,47 @@ function buildSeed(): { appointments: Appointment[]; payments: Payment[] } {
       }
     }
   }
+  // ----- Relleno de HOY: ~7 turnos por barbero para una cola bien realista -----
+  const todayDate = todayAR();
+  const todayWd = weekdayOf(todayDate);
+  const todayTimes = ["10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+  const fillServices = SERVICES.filter((s) => s.durationMin <= 45);
+  for (const b of activeBarbers) {
+    const wh = WORKING_HOURS.find((w) => w.barberId === b.id && w.weekday === todayWd);
+    if (!wh) continue;
+    for (const hhmm of todayTimes) {
+      if (rand() < 0.18) continue; // saltea ~1-2 → ~7-8 por barbero, variado
+      const svc = fillServices[Math.floor(rand() * fillServices.length)];
+      const start = arDateTime(todayDate, hhmm);
+      const end = new Date(start.getTime() + svc.durationMin * 60_000);
+      const depositCents = depositForPrice(svc.priceCents);
+      const senaMethod: PaymentMethod = rand() < 0.55 ? "mercadopago" : "efectivo";
+      aSeq++;
+      const appt: Appointment = {
+        id: `seed-${String(aSeq).padStart(4, "0")}`,
+        serviceId: svc.id,
+        barberId: b.id,
+        customerId: null,
+        customerName: CLIENT_NAMES[Math.floor(rand() * CLIENT_NAMES.length)],
+        customerPhone: "54929955" + String(51000 + aSeq),
+        start: start.toISOString(),
+        end: end.toISOString(),
+        status: "confirmada",
+        priceCents: svc.priceCents,
+        depositCents,
+        holdExpiresAt: null,
+        depositMethod: senaMethod,
+        depositStatus: "pagado",
+        balanceMethod: null,
+        balanceStatus: "pendiente",
+        createdAt: start.toISOString(),
+      };
+      appointments.push(appt);
+      pSeq++;
+      payments.push({ id: `pseed-${pSeq}`, appointmentId: appt.id, barberId: b.id, kind: "sena", method: senaMethod, amountCents: depositCents, createdAt: start.toISOString() });
+    }
+  }
+
   return { appointments, payments };
 }
 

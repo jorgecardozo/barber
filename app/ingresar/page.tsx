@@ -126,7 +126,8 @@ export default async function IngresarPage({
             <CardContent className="py-4 text-xs text-muted-foreground">
               <p className="mb-1 font-semibold text-foreground">🔑 Cuentas de prueba (demo)</p>
               <p>Cliente: <span className="text-flow-cyan">cliente@demo.com</span> / cliente123</p>
-              <p>Staff (panel): <span className="text-flow-cyan">admin@flowsite.com</span> / admin123</p>
+              <p>Barbero: <span className="text-flow-cyan">barbero@demo.com</span> / barbero123</p>
+              <p>Admin: <span className="text-flow-cyan">admin@flowsite.com</span> / admin123</p>
             </CardContent>
           </Card>
         </section>

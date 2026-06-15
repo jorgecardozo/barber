@@ -30,10 +30,10 @@ function split(items: QueueItem[], now: number) {
   const upcoming = live
     .filter((i) => i.startMs > now && i.status === "confirmada")
     .sort((a, b) => a.startMs - b.startMs);
-  const siguiente = atendiendo ? upcoming[0] : upcoming[0];
-  const espera = atendiendo ? upcoming : upcoming.slice(1);
+  const siguiente = upcoming[0];
+  const espera = upcoming.slice(1); // los que siguen después del "siguiente"
   const atendidos = items.filter((i) => i.status === "completada" || i.endMs <= now);
-  return { atendiendo, siguiente: atendiendo ? upcoming[0] : siguiente, espera, atendidos };
+  return { atendiendo, siguiente, espera, atendidos };
 }
 
 function relMin(ms: number, now: number): string {
@@ -45,11 +45,14 @@ function relMin(ms: number, now: number): string {
 
 export function ColaView({ barbers, single, serverNow }: { barbers: BarberQueue[]; single: boolean; serverNow: number }) {
   const [now, setNow] = useState(serverNow);
+  const [selected, setSelected] = useState<string | null>(null);
   useEffect(() => {
     setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 15000);
     return () => clearInterval(t);
   }, []);
+
+  const selectedBarber = selected ? barbers.find((b) => b.id === selected) ?? null : null;
 
   return (
     <div>
@@ -75,10 +78,27 @@ export function ColaView({ barbers, single, serverNow }: { barbers: BarberQueue[
         </p>
       ) : single ? (
         <SingleQueue barber={barbers[0]} now={now} />
+      ) : selectedBarber ? (
+        <div>
+          <button
+            onClick={() => setSelected(null)}
+            className="mb-5 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            ← Volver a todos los barberos
+          </button>
+          <div className="mb-5 flex items-center gap-3">
+            <Avatar className="h-11 w-11">
+              <AvatarImage src={selectedBarber.img} alt={selectedBarber.name} />
+              <AvatarFallback>{selectedBarber.name[0]}</AvatarFallback>
+            </Avatar>
+            <h2 className="font-display text-2xl">Cola de {selectedBarber.name}</h2>
+          </div>
+          <SingleQueue barber={selectedBarber} now={now} />
+        </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {barbers.map((b) => (
-            <BarberCard key={b.id} barber={b} now={now} />
+            <BarberCard key={b.id} barber={b} now={now} onClick={() => setSelected(b.id)} />
           ))}
         </div>
       )}
@@ -108,7 +128,7 @@ function SingleQueue({ barber, now }: { barber: BarberQueue; now: number }) {
           ) : (
             <motion.div key="libre" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-6">
               <p className="font-display text-3xl text-muted-foreground">Sillón libre</p>
-              <p className="mt-1 text-sm text-muted-foreground">{siguiente ? `Próximo: ${siguiente.client} ${relMin(siguiente.startMs, now)}` : "Sin más turnos hoy"}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{siguiente ? "Esperando al próximo turno →" : "Sin más turnos hoy"}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -167,19 +187,25 @@ function SingleQueue({ barber, now }: { barber: BarberQueue; now: number }) {
 }
 
 /* ---------- Tarjeta por barbero (admin) ---------- */
-function BarberCard({ barber, now }: { barber: BarberQueue; now: number }) {
+function BarberCard({ barber, now, onClick }: { barber: BarberQueue; now: number; onClick: () => void }) {
   const { atendiendo, siguiente, espera } = split(barber.items, now);
   return (
-    <motion.div layout className="rounded-2xl border border-border bg-card p-5">
+    <motion.div
+      layout
+      onClick={onClick}
+      whileHover={{ y: -2 }}
+      className="group cursor-pointer rounded-2xl border border-border bg-card p-5 transition-colors hover:border-flow-cyan/40"
+    >
       <div className="mb-4 flex items-center gap-3">
         <Avatar className="h-10 w-10">
           <AvatarImage src={barber.img} alt={barber.name} />
           <AvatarFallback>{barber.name[0]}</AvatarFallback>
         </Avatar>
-        <div>
+        <div className="flex-1">
           <p className="font-display text-lg">{barber.name}</p>
           <p className="text-xs text-muted-foreground">{espera.length} en espera</p>
         </div>
+        <span className="text-xs text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100">Ver cola →</span>
       </div>
 
       <div className={`mb-3 rounded-xl border p-3 ${atendiendo ? "border-flow-cyan/30 bg-flow-cyan/5" : "border-border"}`}>

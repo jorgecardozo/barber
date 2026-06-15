@@ -45,8 +45,10 @@ export default async function PanelLoginPage({
           <button className="w-full rounded-full bg-flow-red px-6 py-3.5 font-semibold text-white">Entrar</button>
         </form>
 
-        <p className="mt-5 text-center text-xs text-ash">
-          Demo: <span className="text-flow-cyan">admin@flowsite.com</span> / admin123
+        <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
+          Demo admin: <span className="text-flow-cyan">admin@flowsite.com</span> / admin123
+          <br />
+          Demo barbero: <span className="text-flow-cyan">barbero@demo.com</span> / barbero123
         </p>
       </div>
     </main>
