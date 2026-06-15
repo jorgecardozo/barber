@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Check } from "lucide-react";
+import { Loader2, Check, CalendarClock, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -46,6 +46,33 @@ export function HorariosEditor({
     setSaved(false);
   }
 
+  // Plantilla para aplicar el mismo horario a todos los días
+  const base = hours.find((h) => h.weekday === 1) ?? hours[0];
+  const [tpl, setTpl] = useState({
+    open: base?.open ?? "10:00",
+    close: base?.close ?? "20:00",
+    breakStart: base?.breakStart ?? "13:00",
+    breakEnd: base?.breakEnd ?? "14:00",
+  });
+  const [incluirCerrados, setIncluirCerrados] = useState(false);
+
+  function aplicarATodos() {
+    setDays((prev) =>
+      prev.map((d) => {
+        if (d.closed && !incluirCerrados) return d; // respeta el día franco
+        return {
+          closed: incluirCerrados ? false : d.closed,
+          open: tpl.open,
+          close: tpl.close,
+          breakStart: tpl.breakStart,
+          breakEnd: tpl.breakEnd,
+        };
+      }),
+    );
+    setSaved(false);
+    toast.success("Horario aplicado a todos los días. Revisá y guardá.");
+  }
+
   function save() {
     const fd = new FormData();
     fd.set("barberId", barberId);
@@ -74,6 +101,30 @@ export function HorariosEditor({
   return (
     <div className="space-y-2">
       <p className="mb-2 text-sm text-muted-foreground">Horario de <span className="text-foreground">{barberName}</span></p>
+
+      {/* Aplicar un mismo horario a todos los días */}
+      <div className="rounded-xl border border-flow-cyan/30 bg-flow-cyan/5 p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <CalendarClock className="h-4 w-4 text-flow-cyan" />
+          <span className="text-sm font-medium text-foreground">Aplicar un horario a todos los días</span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <TimeField label="Abre" value={tpl.open} onChange={(v) => setTpl((t) => ({ ...t, open: v }))} />
+          <TimeField label="Cierra" value={tpl.close} onChange={(v) => setTpl((t) => ({ ...t, close: v }))} />
+          <TimeField label="Corte desde" value={tpl.breakStart} onChange={(v) => setTpl((t) => ({ ...t, breakStart: v }))} />
+          <TimeField label="Corte hasta" value={tpl.breakEnd} onChange={(v) => setTpl((t) => ({ ...t, breakEnd: v }))} />
+        </div>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <Switch checked={incluirCerrados} onCheckedChange={setIncluirCerrados} />
+            Incluir días cerrados (abre todos)
+          </label>
+          <Button variant="outline" onClick={aplicarATodos} className="border-flow-cyan/40 text-flow-cyan hover:bg-flow-cyan/10 hover:text-flow-cyan">
+            <Copy className="h-4 w-4" /> Aplicar a todos los días
+          </Button>
+        </div>
+      </div>
+
       {ORDER.map((wd) => {
         const d = days[wd];
         return (
