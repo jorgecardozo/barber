@@ -21,7 +21,7 @@ export function PanelHeader({ user, active }: { user: User; active: TabKey }) {
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2.5 sm:gap-3 sm:px-5">
         <Link href="/panel" className="shrink-0 font-display text-base tracking-wide sm:text-lg">
-          FLOW <span className="chrome-text italic">PANEL</span>
+          FLOW <span className="chrome-text italic">SITE</span>
         </Link>
         <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {items.map((n) => {

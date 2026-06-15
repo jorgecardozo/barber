@@ -296,10 +296,10 @@ export function TurnosTable({
       </p>
 
       {/* Tabla (desktop) */}
-      <div className="hidden overflow-x-auto rounded-xl border border-border md:block">
+      <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-lg shadow-black/30 md:block">
         <Table className="min-w-[760px]">
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
+          <TableHeader className="[&_th]:text-xs [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wider [&_th]:text-muted-foreground">
+            <TableRow className="border-b border-border bg-secondary/60 hover:bg-secondary/60">
               <TableHead>Fecha</TableHead>
               <TableHead>Cliente</TableHead>
               <TableHead>Barbero</TableHead>
@@ -311,8 +311,8 @@ export function TurnosTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paged.map((r) => (
-              <TableRow key={r.id}>
+            {paged.map((r, i) => (
+              <TableRow key={r.id} className={i % 2 === 1 ? "bg-foreground/[0.025]" : undefined}>
                 <TableCell className="whitespace-nowrap">
                   <span className="text-foreground">{r.dateLabel}</span>
                   <span className="block text-xs text-muted-foreground">{r.time} hs</span>
