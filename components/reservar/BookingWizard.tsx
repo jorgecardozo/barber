@@ -42,7 +42,7 @@ export function BookingWizard({
   const [slot, setSlot] = useState<Slot | null>(null);
   const [grid, setGrid] = useState<DaySlot[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [resumen, setResumen] = useState<Record<string, number>>({});
+  const [resumen, setResumen] = useState<Record<string, { count: number; closed: boolean }>>({});
   const [metodo, setMetodo] = useState<"mercadopago" | "efectivo">("mercadopago");
 
   const service = services.find((s) => s.id === serviceId) ?? null;
@@ -57,8 +57,8 @@ export function BookingWizard({
       .then((r) => r.json())
       .then((d) => {
         if (cancel) return;
-        const map: Record<string, number> = {};
-        for (const x of d.dias ?? []) map[x.date] = x.count;
+        const map: Record<string, { count: number; closed: boolean }> = {};
+        for (const x of d.dias ?? []) map[x.date] = { count: x.count, closed: !!x.closed };
         setResumen(map);
       })
       .catch(() => {});
@@ -204,29 +204,31 @@ export function BookingWizard({
           </p>
           <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
             {dates.map((d) => {
-              const count = resumen[d.value];
-              const full = count === 0;
+              const info = resumen[d.value];
+              const closed = info?.closed ?? false;
+              const count = info?.count;
+              const disabled = closed || count === 0;
               return (
                 <button
                   key={d.value}
                   onClick={() => {
-                    if (full) return;
+                    if (disabled) return;
                     setDate(d.value);
                     setSlot(null);
                   }}
-                  disabled={full}
+                  disabled={disabled}
                   className={`flex min-w-[70px] shrink-0 flex-col items-center rounded-xl border px-3 py-2 transition-colors ${
                     date === d.value
                       ? "border-flow-red bg-flow-red/10 text-bone"
-                      : full
+                      : disabled
                         ? "cursor-not-allowed border-white/5 text-ash/40"
                         : "border-white/10 text-ash hover:border-white/25"
                   }`}
                 >
                   <span className="text-[11px] uppercase">{d.weekday}</span>
                   <span className="font-display text-lg">{d.day}</span>
-                  <span className={`mt-0.5 text-[10px] ${full ? "text-ash/40" : "text-flow-cyan"}`}>
-                    {count === undefined ? "·" : full ? "lleno" : `${count} libres`}
+                  <span className={`mt-0.5 text-[10px] ${disabled ? "text-ash/40" : "text-flow-cyan"}`}>
+                    {info === undefined ? "·" : closed ? "Cerrado" : count === 0 ? "lleno" : `${count} libres`}
                   </span>
                 </button>
               );

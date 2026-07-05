@@ -5,7 +5,7 @@
  * ya tomados (holds no vencidos + confirmados).
  */
 import { DECISIONS } from "./decisions";
-import { activeAppointmentsForBarber, getService, workingHoursFor } from "./store";
+import { activeAppointmentsForBarber, getService, workingHoursFor, workingHoursForBarber } from "./store";
 import { addDays, arDateTime, hhmmToMin, minToHHMM, nowMs, todayAR, weekdayOf } from "./time";
 
 export interface Slot {
@@ -26,7 +26,7 @@ export async function availableSlots(barberId: string, serviceId: string, dateSt
 
   const dur = svc.durationMin;
   const bufferMs = DECISIONS.bufferMinutes * 60_000;
-  const step = DECISIONS.slotGranularityMinutes;
+  const step = svc.durationMin; // un turno por cada duración del servicio (no cada 15')
   const leadMs = DECISIONS.leadTimeMinutes * 60_000;
   const now = nowMs();
 
@@ -77,7 +77,7 @@ export async function daySlotGrid(barberId: string, serviceId: string, dateStr: 
   const breakEnd = wh.breakEnd ? hhmmToMin(wh.breakEnd) : null;
   const dur = svc.durationMin;
   const bufferMs = DECISIONS.bufferMinutes * 60_000;
-  const step = DECISIONS.slotGranularityMinutes;
+  const step = svc.durationMin; // un turno por cada duración del servicio (no cada 15')
   const leadMs = DECISIONS.leadTimeMinutes * 60_000;
   const now = nowMs();
 
@@ -96,11 +96,21 @@ export async function daySlotGrid(barberId: string, serviceId: string, dateStr: 
   return grid;
 }
 
-/** Cantidad de horarios disponibles por día en el horizonte (para el calendario). */
-export async function horizonAvailability(barberId: string, serviceId: string): Promise<{ date: string; count: number }[]> {
+/** Cantidad de horarios disponibles por día en el horizonte (para el calendario).
+ *  `closed` = el barbero NO trabaja ese día (para distinguirlo de "lleno"). */
+export async function horizonAvailability(
+  barberId: string,
+  serviceId: string,
+): Promise<{ date: string; count: number; closed: boolean }[]> {
   const dates = horizonDates();
+  const wh = await workingHoursForBarber(barberId);
+  const workDays = new Set(wh.map((w) => w.weekday));
   const counts = await Promise.all(dates.map((d) => availableSlots(barberId, serviceId, d)));
-  return dates.map((date, i) => ({ date, count: counts[i].length }));
+  return dates.map((date, i) => ({
+    date,
+    count: counts[i].length,
+    closed: !workDays.has(weekdayOf(date)),
+  }));
 }
 
 /** ¿Tiene el barbero al menos un slot disponible en el horizonte? */
