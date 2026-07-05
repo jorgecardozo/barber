@@ -26,7 +26,7 @@ export async function availableSlots(barberId: string, serviceId: string, dateSt
 
   const dur = svc.durationMin;
   const bufferMs = DECISIONS.bufferMinutes * 60_000;
-  const step = svc.durationMin; // un turno por cada duración del servicio (no cada 15')
+  const step = Math.max(60, svc.durationMin); // un turno por hora (o por la duración si es más larga)
   const leadMs = DECISIONS.leadTimeMinutes * 60_000;
   const now = nowMs();
 
@@ -77,7 +77,7 @@ export async function daySlotGrid(barberId: string, serviceId: string, dateStr: 
   const breakEnd = wh.breakEnd ? hhmmToMin(wh.breakEnd) : null;
   const dur = svc.durationMin;
   const bufferMs = DECISIONS.bufferMinutes * 60_000;
-  const step = svc.durationMin; // un turno por cada duración del servicio (no cada 15')
+  const step = Math.max(60, svc.durationMin); // un turno por hora (o por la duración si es más larga)
   const leadMs = DECISIONS.leadTimeMinutes * 60_000;
   const now = nowMs();
 
