@@ -81,9 +81,14 @@ await db.from("appointments").delete().eq("barber_id", lucio.id).gte("starts_at"
 const plan = [
   { slug: "corte-clasico", h: 10, status: "completada", balancePaid: true, client: "Tomás G." },
   { slug: "corte-barba", h: 11, status: "en_curso", balancePaid: false, client: "Nico R." },
-  { slug: "diseno-lineas", h: 15, status: "confirmada", balancePaid: false, client: "Joaco P." },
-  { slug: "corte-ninos", h: 16, status: "confirmada", balancePaid: false, client: "Benja S." },
-  { slug: "degradado-fade", h: 17, status: "confirmada", balancePaid: false, client: "Lautaro M." },
+  { slug: "diseno-lineas", h: 12, status: "confirmada", balancePaid: false, client: "Joaco P." },
+  { slug: "corte-ninos", h: 14, status: "confirmada", balancePaid: false, client: "Benja S." },
+  { slug: "degradado-fade", h: 15, status: "confirmada", balancePaid: false, client: "Lautaro M." },
+  { slug: "corte-clasico", h: 16, status: "confirmada", balancePaid: false, client: "Facu D." },
+  { slug: "corte-barba", h: 17, status: "confirmada", balancePaid: false, client: "Iván T." },
+  { slug: "diseno-lineas", h: 18, status: "confirmada", balancePaid: false, client: "Gael M." },
+  { slug: "corte-ninos", h: 19, status: "confirmada", balancePaid: false, client: "Santi V." },
+  { slug: "corte-clasico", h: 20, status: "confirmada", balancePaid: false, client: "Bruno A." },
 ];
 
 let nApt = 0, nPay = 0;
