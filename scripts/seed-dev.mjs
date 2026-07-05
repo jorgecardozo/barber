@@ -22,9 +22,9 @@ const db = createClient(URL_, SERVICE, { auth: { persistSession: false } });
 // --- usuarios demo (mismas credenciales que la simulación) ---
 const USERS = [
   { email: "admin@flowsite.com", password: "admin123", full_name: "Admin Flow", phone: "5492995550000", role: "admin" },
-  { email: "gavazz@flowsite.com", password: "barber123", full_name: "Gavazz", phone: "5492995550001", role: "barbero", barber: "Gavazz" },
-  { email: "thiago@flowsite.com", password: "barber123", full_name: "Thiago", phone: "5492995550010", role: "barbero", barber: "Thiago" },
-  { email: "barbero@demo.com", password: "barbero123", full_name: "Lucio", phone: "5492995550002", role: "barbero", barber: "Lucio" },
+  { email: "gavazz@flowsite.com", password: "barber123", full_name: "Gavazz", phone: "5492995550001", role: "barbero", barber: "Gavazz", photo: "/barbers/br1.jpg" },
+  { email: "thiago@flowsite.com", password: "barber123", full_name: "Thiago", phone: "5492995550010", role: "barbero", barber: "Thiago", photo: "/barbers/br2.jpg" },
+  { email: "barbero@demo.com", password: "barbero123", full_name: "Lucio", phone: "5492995550002", role: "barbero", barber: "Lucio", photo: "/barbers/br3.jpg" },
   { email: "cliente@demo.com", password: "cliente123", full_name: "Cliente Demo", phone: "5492995551234", role: "cliente" },
 ];
 
@@ -57,9 +57,10 @@ for (const u of USERS) {
     .update({ role: u.role, full_name: u.full_name, phone: u.phone })
     .eq("id", existing.id);
   if (pe) throw new Error(`profile ${u.email}: ${pe.message}`);
-  // vincular barbero por nombre
+  // vincular barbero por nombre + restaurar su foto real (que no sea un avatar
+  // DiceBear, que se ve mal como "foto" en el wizard de reserva)
   if (u.barber) {
-    const { error: be } = await db.from("barbers").update({ profile_id: existing.id }).eq("name", u.barber);
+    const { error: be } = await db.from("barbers").update({ profile_id: existing.id, img_url: u.photo }).eq("name", u.barber);
     if (be) throw new Error(`link barber ${u.barber}: ${be.message}`);
   }
 }
