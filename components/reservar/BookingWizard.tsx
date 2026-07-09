@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatARS } from "@/lib/money";
 import { crearReservaAction } from "@/lib/actions";
 
@@ -19,8 +20,9 @@ type Barber = { id: string; name: string; specialty: string; img: string; servic
 type DateOpt = { value: string; weekday: string; day: string; long: string };
 type Slot = { hhmm: string; startISO: string };
 type DaySlot = { hhmm: string; startISO: string; available: boolean };
+type DayInfo = { count: number; closed: boolean };
 
-const STEPS = ["Servicio", "Barbero", "Día y hora", "Confirmar"];
+const STEPS = ["Servicio", "Barbero y horario", "Confirmar"];
 
 export function BookingWizard({
   services,
@@ -37,29 +39,57 @@ export function BookingWizard({
 }) {
   const [step, setStep] = useState(1);
   const [serviceId, setServiceId] = useState<string | null>(null);
-  const [barberId, setBarberId] = useState<string | null>(null);
+  const [barberIndex, setBarberIndex] = useState(0);
   const [date, setDate] = useState<string | null>(null);
   const [slot, setSlot] = useState<Slot | null>(null);
   const [grid, setGrid] = useState<DaySlot[] | null>(null);
   const [loading, setLoading] = useState(false);
-  const [resumen, setResumen] = useState<Record<string, { count: number; closed: boolean }>>({});
+  const [resumen, setResumen] = useState<Record<string, DayInfo>>({});
   const [metodo, setMetodo] = useState<"mercadopago" | "efectivo">("mercadopago");
 
   const service = services.find((s) => s.id === serviceId) ?? null;
-  const barber = barbers.find((b) => b.id === barberId) ?? null;
+  const availBarbers = service ? barbers.filter((b) => b.serviceIds.includes(service.id)) : barbers;
+  const barber = availBarbers[barberIndex] ?? null;
+  const barberId = barber?.id ?? null;
   const dateOpt = dates.find((d) => d.value === date) ?? null;
+  const today = dates[0]?.value ?? null;
 
-  // Resumen de disponibilidad por día (para el calendario "de un vistazo")
+  function chooseService(id: string) {
+    setServiceId(id);
+    setBarberIndex(0);
+    setDate(today); // por defecto, el día de hoy
+    setSlot(null);
+    setGrid(null);
+    setStep(2);
+  }
+  function chooseBarber(i: number) {
+    if (i < 0 || i >= availBarbers.length) return;
+    setBarberIndex(i);
+    setSlot(null); // se mantiene el día elegido, cambia el barbero
+  }
+
+  // Resumen de disponibilidad por día del barbero centrado (calendario "de un vistazo")
   useEffect(() => {
-    if (step !== 3 || !barberId || !serviceId) return;
+    if (step !== 2 || !barberId || !serviceId) return;
     let cancel = false;
     fetch(`/api/disponibilidad?barber=${barberId}&service=${serviceId}&resumen=1`)
       .then((r) => r.json())
       .then((d) => {
         if (cancel) return;
-        const map: Record<string, { count: number; closed: boolean }> = {};
+        const map: Record<string, DayInfo> = {};
         for (const x of d.dias ?? []) map[x.date] = { count: x.count, closed: !!x.closed };
         setResumen(map);
+        // Por defecto hoy; pero si hoy no tiene cupo (tarde/cerrado/lleno para este
+        // barbero), saltar al primer día con horarios libres.
+        setDate((cur) => {
+          const ci = cur ? map[cur] : undefined;
+          if (ci && !ci.closed && ci.count > 0) return cur;
+          const firstOpen = dates.find((dd) => {
+            const m = map[dd.value];
+            return m && !m.closed && m.count > 0;
+          });
+          return firstOpen ? firstOpen.value : cur;
+        });
       })
       .catch(() => {});
     return () => {
@@ -67,9 +97,9 @@ export function BookingWizard({
     };
   }, [step, barberId, serviceId]);
 
-  // Grilla del día (ocupados + libres)
+  // Grilla de horarios del barbero + día seleccionados
   useEffect(() => {
-    if (step !== 3 || !barberId || !serviceId || !date) return;
+    if (step !== 2 || !barberId || !serviceId || !date) return;
     let cancel = false;
     setLoading(true);
     setGrid(null);
@@ -85,8 +115,6 @@ export function BookingWizard({
     };
   }, [step, barberId, serviceId, date]);
 
-  const availBarbers = barbers.filter((b) => (serviceId ? b.serviceIds.includes(serviceId) : true));
-
   return (
     <section className="mx-auto max-w-3xl px-5 py-12">
       <div className="mb-2 text-center">
@@ -97,7 +125,7 @@ export function BookingWizard({
       </div>
 
       {/* Stepper */}
-      <ol className="mx-auto mb-10 mt-8 flex max-w-xl items-center justify-between">
+      <ol className="mx-auto mb-10 mt-8 flex max-w-md items-center justify-between">
         {STEPS.map((label, i) => {
           const n = i + 1;
           const done = n < step;
@@ -116,13 +144,9 @@ export function BookingWizard({
                 >
                   {done ? "✓" : n}
                 </span>
-                <span className={`mt-1.5 hidden text-[11px] sm:block ${current ? "text-bone" : "text-ash"}`}>
-                  {label}
-                </span>
+                <span className={`mt-1.5 hidden text-[11px] sm:block ${current ? "text-bone" : "text-ash"}`}>{label}</span>
               </div>
-              {n < STEPS.length && (
-                <span className={`mx-1 h-px flex-1 ${done ? "bg-flow-cyan/40" : "bg-white/10"}`} />
-              )}
+              {n < STEPS.length && <span className={`mx-1 h-px flex-1 ${done ? "bg-flow-cyan/40" : "bg-white/10"}`} />}
             </li>
           );
         })}
@@ -140,13 +164,7 @@ export function BookingWizard({
           {services.map((s) => (
             <button
               key={s.id}
-              onClick={() => {
-                setServiceId(s.id);
-                setBarberId(null);
-                setDate(null);
-                setSlot(null);
-                setStep(2);
-              }}
+              onClick={() => chooseService(s.id)}
               className={`group rounded-2xl border p-5 text-left transition-all hover:-translate-y-0.5 ${
                 s.featured ? "border-flow-red/40 bg-flow-red/5" : "border-white/8 bg-ink-2 hover:border-white/20"
               }`}
@@ -164,41 +182,88 @@ export function BookingWizard({
         </div>
       )}
 
-      {/* Paso 2: Barbero */}
-      {step === 2 && (
+      {/* Paso 2: Barbero (carrusel) + Día + Hora, todo en una vista */}
+      {step === 2 && service && (
         <div>
-          <BackBar onClick={() => setStep(1)} label={`Servicio: ${service?.name}`} />
-          <div className="grid gap-4 sm:grid-cols-3">
-            {availBarbers.map((b) => (
+          <BackBar onClick={() => setStep(1)} label={`Servicio: ${service.name}`} />
+
+          {/* --- Carrusel de barberos (coverflow) --- */}
+          <p className="mb-3 text-center text-sm text-ash">Elegí tu barbero</p>
+          <div className="relative mx-auto flex h-64 max-w-xl items-center justify-center overflow-hidden [perspective:1200px] sm:h-72">
+            {availBarbers.length > 1 && (
               <button
-                key={b.id}
-                onClick={() => {
-                  setBarberId(b.id);
-                  setDate(null);
-                  setSlot(null);
-                  setStep(3);
-                }}
-                className="group overflow-hidden rounded-2xl border border-white/8 bg-ink-2 text-left transition-all hover:-translate-y-0.5 hover:border-flow-cyan/30"
+                type="button"
+                onClick={() => chooseBarber(barberIndex - 1)}
+                disabled={barberIndex === 0}
+                aria-label="Barbero anterior"
+                className="absolute left-0 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-ink/70 text-bone backdrop-blur transition-colors hover:bg-ink disabled:opacity-30"
               >
-                <div className="relative h-40">
-                  <Image src={b.img} alt={b.name} fill sizes="33vw" className="object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-ink to-transparent" />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-display text-lg">{b.name}</h3>
-                  <p className="text-xs text-ash">{b.specialty}</p>
-                </div>
+                <ChevronLeft className="h-5 w-5" />
               </button>
-            ))}
+            )}
+
+            {availBarbers.map((b, i) => {
+              const offset = i - barberIndex;
+              const abs = Math.abs(offset);
+              const center = offset === 0;
+              return (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => chooseBarber(i)}
+                  aria-label={b.name}
+                  className={`absolute left-1/2 top-1/2 h-56 w-44 overflow-hidden rounded-2xl border bg-ink-2 shadow-2xl transition-all duration-500 ease-out sm:h-64 sm:w-52 ${
+                    center ? "border-flow-cyan/50" : "border-white/10"
+                  }`}
+                  style={{
+                    transform: `translate(-50%, -50%) translateX(${offset * 64}%) rotateY(${offset * -25}deg) scale(${center ? 1 : 0.82})`,
+                    zIndex: 20 - abs,
+                    opacity: abs > 2 ? 0 : 1,
+                    filter: center ? "none" : "grayscale(1) brightness(0.5)",
+                    pointerEvents: abs > 2 ? "none" : "auto",
+                  }}
+                >
+                  <Image src={b.img} alt={b.name} fill sizes="220px" className="object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/25 to-transparent" />
+                  {center && (
+                    <div className="absolute inset-x-0 bottom-0 p-4 text-left">
+                      <h3 className="font-display text-xl leading-tight">{b.name}</h3>
+                      <p className="text-xs text-ash">{b.specialty}</p>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+
+            {availBarbers.length > 1 && (
+              <button
+                type="button"
+                onClick={() => chooseBarber(barberIndex + 1)}
+                disabled={barberIndex === availBarbers.length - 1}
+                aria-label="Barbero siguiente"
+                className="absolute right-0 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-ink/70 text-bone backdrop-blur transition-colors hover:bg-ink disabled:opacity-30"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            )}
           </div>
-        </div>
-      )}
 
-      {/* Paso 3: Día y hora */}
-      {step === 3 && (
-        <div>
-          <BackBar onClick={() => setStep(2)} label={`Barbero: ${barber?.name}`} />
+          {/* dots */}
+          {availBarbers.length > 1 && (
+            <div className="mb-6 mt-3 flex justify-center gap-1.5">
+              {availBarbers.map((b, i) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  onClick={() => chooseBarber(i)}
+                  aria-label={`Ir a ${b.name}`}
+                  className={`h-1.5 rounded-full transition-all ${i === barberIndex ? "w-5 bg-flow-cyan" : "w-1.5 bg-white/20"}`}
+                />
+              ))}
+            </div>
+          )}
 
+          {/* --- Día --- */}
           <p className="mb-2 text-sm text-ash">
             Elegí el día <span className="text-ash/60">· abajo de cada día ves cuántos horarios quedan libres</span>
           </p>
@@ -235,10 +300,11 @@ export function BookingWizard({
             })}
           </div>
 
+          {/* --- Hora --- */}
           {date && (
             <>
               <div className="mb-2 flex items-center justify-between">
-                <p className="text-sm text-ash">Horarios</p>
+                <p className="text-sm text-ash">Horarios de {barber?.name}</p>
                 <div className="flex items-center gap-3 text-[11px] text-ash">
                   <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm border border-flow-cyan/40 bg-flow-cyan/15" /> Libre</span>
                   <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm bg-white/8" /> Ocupado</span>
@@ -247,7 +313,7 @@ export function BookingWizard({
               {loading && <p className="py-6 text-center text-sm text-ash">Buscando horarios…</p>}
               {!loading && grid && grid.length === 0 && (
                 <p className="rounded-xl border border-white/10 bg-ink-2 px-4 py-6 text-center text-sm text-ash">
-                  {barber?.name} no atiende este día. Probá otro. 🗓️
+                  {barber?.name} no atiende este día. Probá otro día o cambiá de barbero arriba. 🗓️
                 </p>
               )}
               {!loading && grid && grid.length > 0 && (
@@ -259,7 +325,7 @@ export function BookingWizard({
                           key={s.startISO}
                           onClick={() => {
                             setSlot({ hhmm: s.hhmm, startISO: s.startISO });
-                            setStep(4);
+                            setStep(3);
                           }}
                           className="rounded-lg border border-flow-cyan/30 bg-flow-cyan/10 py-2.5 text-sm font-medium text-flow-cyan transition-colors hover:border-flow-cyan hover:bg-flow-cyan/20"
                         >
@@ -286,10 +352,10 @@ export function BookingWizard({
         </div>
       )}
 
-      {/* Paso 4: Confirmar */}
-      {step === 4 && service && barber && dateOpt && slot && (
+      {/* Paso 3: Confirmar */}
+      {step === 3 && service && barber && dateOpt && slot && (
         <div>
-          <BackBar onClick={() => setStep(3)} label="Cambiar horario" />
+          <BackBar onClick={() => setStep(2)} label="Cambiar barbero u horario" />
 
           <div className="rounded-2xl border border-white/8 bg-ink-2 p-6">
             <h3 className="font-display text-2xl">Revisá tu turno</h3>
