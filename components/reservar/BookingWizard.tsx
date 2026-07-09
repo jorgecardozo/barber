@@ -116,16 +116,16 @@ export function BookingWizard({
   }, [step, barberId, serviceId, date]);
 
   return (
-    <section className="mx-auto max-w-3xl px-5 py-12">
+    <section className="mx-auto max-w-3xl px-5 py-6 sm:py-12">
       <div className="mb-2 text-center">
-        <p className="text-xs font-medium uppercase tracking-[0.3em] text-flow-cyan">Reservá tu turno</p>
-        <h1 className="mt-2 font-display text-4xl">
+        <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-flow-cyan sm:text-xs">Reservá tu turno</p>
+        <h1 className="mt-1 font-display text-2xl sm:mt-2 sm:text-4xl">
           Sacá tu <span className="chrome-text italic">turno</span>
         </h1>
       </div>
 
       {/* Stepper */}
-      <ol className="mx-auto mb-10 mt-8 flex max-w-md items-center justify-between">
+      <ol className="mx-auto mb-5 mt-4 flex max-w-md items-center justify-between sm:mb-9 sm:mt-7">
         {STEPS.map((label, i) => {
           const n = i + 1;
           const done = n < step;
@@ -188,8 +188,8 @@ export function BookingWizard({
           <BackBar onClick={() => setStep(1)} label={`Servicio: ${service.name}`} />
 
           {/* --- Carrusel de barberos (coverflow) --- */}
-          <p className="mb-3 text-center text-sm text-ash">Elegí tu barbero</p>
-          <div className="relative mx-auto flex h-64 max-w-xl items-center justify-center overflow-hidden [perspective:1200px] sm:h-72">
+          <p className="mb-2 text-center text-xs text-ash sm:text-sm">Elegí tu barbero</p>
+          <div className="relative mx-auto flex h-40 max-w-xl items-center justify-center overflow-hidden [perspective:1200px] sm:h-72">
             {availBarbers.length > 1 && (
               <button
                 type="button"
@@ -212,7 +212,7 @@ export function BookingWizard({
                   type="button"
                   onClick={() => chooseBarber(i)}
                   aria-label={b.name}
-                  className={`absolute left-1/2 top-1/2 h-56 w-44 overflow-hidden rounded-2xl border bg-ink-2 shadow-2xl transition-all duration-500 ease-out sm:h-64 sm:w-52 ${
+                  className={`absolute left-1/2 top-1/2 h-32 w-24 overflow-hidden rounded-2xl border bg-ink-2 shadow-2xl transition-all duration-500 ease-out sm:h-64 sm:w-52 ${
                     center ? "border-flow-cyan/50" : "border-white/10"
                   }`}
                   style={{
@@ -226,9 +226,9 @@ export function BookingWizard({
                   <Image src={b.img} alt={b.name} fill sizes="220px" className="object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/25 to-transparent" />
                   {center && (
-                    <div className="absolute inset-x-0 bottom-0 p-4 text-left">
-                      <h3 className="font-display text-xl leading-tight">{b.name}</h3>
-                      <p className="text-xs text-ash">{b.specialty}</p>
+                    <div className="absolute inset-x-0 bottom-0 p-2 text-left sm:p-4">
+                      <h3 className="font-display text-sm leading-tight sm:text-xl">{b.name}</h3>
+                      <p className="text-[10px] text-ash sm:text-xs">{b.specialty}</p>
                     </div>
                   )}
                 </button>
@@ -250,7 +250,7 @@ export function BookingWizard({
 
           {/* dots */}
           {availBarbers.length > 1 && (
-            <div className="mb-6 mt-3 flex justify-center gap-1.5">
+            <div className="mb-3 mt-2 flex justify-center gap-1.5 sm:mb-5 sm:mt-3">
               {availBarbers.map((b, i) => (
                 <button
                   key={b.id}
@@ -264,10 +264,10 @@ export function BookingWizard({
           )}
 
           {/* --- Día --- */}
-          <p className="mb-2 text-sm text-ash">
-            Elegí el día <span className="text-ash/60">· abajo de cada día ves cuántos horarios quedan libres</span>
+          <p className="mb-2 text-xs text-ash sm:text-sm">
+            Elegí el día <span className="hidden text-ash/60 sm:inline">· abajo de cada día ves cuántos horarios quedan libres</span>
           </p>
-          <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+          <div className="mb-4 flex gap-2 overflow-x-auto pb-2 sm:mb-6">
             {dates.map((d) => {
               const info = resumen[d.value];
               const closed = info?.closed ?? false;
@@ -282,7 +282,7 @@ export function BookingWizard({
                     setSlot(null);
                   }}
                   disabled={disabled}
-                  className={`flex min-w-[70px] shrink-0 flex-col items-center rounded-xl border px-3 py-2 transition-colors ${
+                  className={`flex min-w-[58px] shrink-0 flex-col items-center rounded-xl border px-2 py-1.5 transition-colors sm:min-w-[70px] sm:px-3 sm:py-2 ${
                     date === d.value
                       ? "border-flow-red bg-flow-red/10 text-bone"
                       : disabled
@@ -291,7 +291,7 @@ export function BookingWizard({
                   }`}
                 >
                   <span className="text-[11px] uppercase">{d.weekday}</span>
-                  <span className="font-display text-lg">{d.day}</span>
+                  <span className="font-display text-base sm:text-lg">{d.day}</span>
                   <span className={`mt-0.5 text-[10px] ${disabled ? "text-ash/40" : "text-flow-cyan"}`}>
                     {info === undefined ? "·" : closed ? "Cerrado" : count === 0 ? "lleno" : `${count} libres`}
                   </span>
@@ -323,11 +323,12 @@ export function BookingWizard({
                       s.available ? (
                         <button
                           key={s.startISO}
-                          onClick={() => {
-                            setSlot({ hhmm: s.hhmm, startISO: s.startISO });
-                            setStep(3);
-                          }}
-                          className="rounded-lg border border-flow-cyan/30 bg-flow-cyan/10 py-2.5 text-sm font-medium text-flow-cyan transition-colors hover:border-flow-cyan hover:bg-flow-cyan/20"
+                          onClick={() => setSlot({ hhmm: s.hhmm, startISO: s.startISO })}
+                          className={`rounded-lg border py-2 text-sm font-medium transition-colors sm:py-2.5 ${
+                            slot?.startISO === s.startISO
+                              ? "border-flow-red bg-flow-red text-white"
+                              : "border-flow-cyan/30 bg-flow-cyan/10 text-flow-cyan hover:border-flow-cyan hover:bg-flow-cyan/20"
+                          }`}
                         >
                           {s.hhmm}
                         </button>
@@ -335,7 +336,7 @@ export function BookingWizard({
                         <div
                           key={s.startISO}
                           title="Ocupado"
-                          className="rounded-lg border border-white/5 bg-white/[0.04] py-2.5 text-center text-sm text-ash/40 line-through"
+                          className="rounded-lg border border-white/5 bg-white/[0.04] py-2 text-center text-sm text-ash/40 line-through sm:py-2.5"
                         >
                           {s.hhmm}
                         </div>
@@ -348,6 +349,15 @@ export function BookingWizard({
                 </>
               )}
             </>
+          )}
+
+          {slot && (
+            <button
+              onClick={() => setStep(3)}
+              className="mt-5 w-full rounded-full bg-flow-red px-6 py-3 font-semibold text-white shadow-[0_10px_30px_-10px] shadow-flow-red/60 ring-1 ring-white/10 transition-transform hover:scale-[1.01]"
+            >
+              Continuar con las {slot.hhmm} →
+            </button>
           )}
         </div>
       )}
