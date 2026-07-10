@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LayoutDashboard, CalendarDays, Scissors, Users, Clock, LogOut, ListOrdered } from "lucide-react";
 import { logoutAction } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import type { User } from "@/lib/types";
 
 type TabKey = "dashboard" | "cola" | "turnos" | "servicios" | "barberos" | "horarios";
@@ -43,6 +44,7 @@ export function PanelHeader({ user, active }: { user: User; active: TabKey }) {
           })}
         </nav>
         <div className="ml-auto flex shrink-0 items-center gap-2">
+          <ThemeToggle />
           <span className="hidden text-sm text-muted-foreground lg:inline">
             {user.name} · <span className="text-flow-cyan">{user.role}</span>
           </span>

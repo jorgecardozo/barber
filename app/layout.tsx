@@ -4,6 +4,7 @@ import "./globals.css";
 import { CursorGlow } from "@/components/CursorGlow";
 import { FloatingCTA } from "@/components/FloatingCTA";
 import { Toaster } from "@/components/ui/sonner";
+import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
 
 const anton = Anton({
@@ -37,17 +38,20 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={cn("dark h-full antialiased", anton.variable, inter.variable, "font-sans")}
+      suppressHydrationWarning
+      className={cn("h-full antialiased", anton.variable, inter.variable, "font-sans")}
     >
-      <body className="min-h-full flex flex-col bg-ink text-bone">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         {/* Si el visitante tiene JS desactivado, mostramos todo igual */}
         <noscript>
           <style>{`[style*="opacity:0"]{opacity:1 !important;transform:none !important}`}</style>
         </noscript>
-        <CursorGlow />
-        {children}
-        <FloatingCTA />
-        <Toaster />
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange>
+          <CursorGlow />
+          {children}
+          <FloatingCTA />
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
