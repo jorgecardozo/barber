@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { PanelHeader } from "@/components/panel/PanelHeader";
 import { BarberDialog } from "@/components/panel/BarberDialog";
 import { BarberActiveToggle } from "@/components/panel/BarberActiveToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,7 +31,6 @@ export default async function BarberosPage() {
 
   return (
     <>
-      <PanelHeader user={admin} active="barberos" />
       <main className="mx-auto w-full max-w-5xl min-w-0 flex-1 overflow-x-clip px-6 py-10 lg:px-8">
         <div className="mb-6 flex items-end justify-between">
           <div>

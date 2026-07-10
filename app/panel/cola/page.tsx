@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { PanelHeader } from "@/components/panel/PanelHeader";
 import { ColaView } from "@/components/panel/ColaView";
 import { requireStaff } from "@/lib/auth";
 import { appointmentsOnDate, getBarberByUserId, getUser, listBarbers, listServices } from "@/lib/store";
@@ -65,7 +64,6 @@ export default async function ColaPage() {
 
   return (
     <>
-      <PanelHeader user={staff} active="cola" />
       <main className="mx-auto w-full max-w-6xl min-w-0 flex-1 overflow-x-clip px-6 py-10 lg:px-8">
         <ColaView barbers={data} single={single} serverNow={nowMs()} />
       </main>

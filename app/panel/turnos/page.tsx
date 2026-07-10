@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { PanelHeader } from "@/components/panel/PanelHeader";
 import { TurnosTable, type TurnoRow } from "@/components/panel/TurnosTable";
 import { WalkInDialog } from "@/components/panel/WalkInDialog";
 import { requireStaff } from "@/lib/auth";
@@ -67,7 +66,6 @@ export default async function TurnosPage() {
 
   return (
     <>
-      <PanelHeader user={staff} active="turnos" />
       <main className="mx-auto w-full max-w-6xl min-w-0 flex-1 overflow-x-clip px-6 py-10 lg:px-8">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>

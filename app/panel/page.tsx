@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { Clock3, DollarSign, Scissors, Users } from "lucide-react";
-import { PanelHeader } from "@/components/panel/PanelHeader";
 import { DashboardCharts } from "@/components/panel/DashboardCharts";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -33,7 +32,6 @@ export default async function PanelPage() {
     if (!me || !me.active) {
       return (
         <>
-          <PanelHeader user={staff} active="dashboard" />
           <main className="mx-auto flex max-w-md flex-1 flex-col items-center justify-center px-5 py-24 text-center">
             <Clock3 className="h-12 w-12 text-amber-300" />
             <h1 className="mt-5 font-display text-3xl">Cuenta pendiente</h1>
@@ -84,7 +82,6 @@ export default async function PanelPage() {
 
   return (
     <>
-      <PanelHeader user={staff} active="dashboard" />
       <main className="mx-auto w-full max-w-6xl min-w-0 flex-1 overflow-x-clip px-6 py-10 lg:px-8">
         <h1 className="font-display text-3xl">Dashboard</h1>
         <p className="mb-6 text-sm text-muted-foreground capitalize">{fmtDateLong(todayAR())}</p>

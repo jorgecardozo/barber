@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { PanelHeader } from "@/components/panel/PanelHeader";
 import { ServiceDialog } from "@/components/panel/ServiceDialog";
 import { DeleteServiceButton } from "@/components/panel/DeleteServiceButton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,7 +19,6 @@ export default async function ServiciosPage() {
 
   return (
     <>
-      <PanelHeader user={staff} active="servicios" />
       <main className="mx-auto w-full max-w-5xl min-w-0 flex-1 overflow-x-clip px-6 py-10 lg:px-8">
         <div className="mb-6 flex items-end justify-between">
           <div>
