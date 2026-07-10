@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { createServiceAction, updateServiceAction } from "@/lib/admin-actions";
 
 export type ServiceForm = {
@@ -50,51 +50,53 @@ export function ServiceDialog({ service }: { service?: ServiceForm }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
         {editing ? (
           <Button variant="ghost" size="icon" aria-label="Editar"><Pencil className="h-4 w-4" /></Button>
         ) : (
           <Button><Plus className="h-4 w-4" /> Nuevo servicio</Button>
         )}
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{editing ? "Editar servicio" : "Nuevo servicio"}</DialogTitle>
-          <DialogDescription>Definí nombre, precio, duración y seña.</DialogDescription>
-        </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
-          {editing && <input type="hidden" name="id" value={service!.id} />}
-          <div className="space-y-1.5">
-            <Label htmlFor="name">Nombre</Label>
-            <Input id="name" name="name" defaultValue={service?.name} required placeholder="Corte clásico" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea id="description" name="description" defaultValue={service?.description} placeholder="Corte a máquina y tijera…" rows={2} />
-          </div>
-          <div className="grid grid-cols-3 gap-3">
+      </SheetTrigger>
+      <SheetContent side="right" className="p-0">
+        <SheetHeader>
+          <SheetTitle>{editing ? "Editar servicio" : "Nuevo servicio"}</SheetTitle>
+          <SheetDescription>Definí nombre, precio, duración y seña.</SheetDescription>
+        </SheetHeader>
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="flex-1 space-y-4 overflow-y-auto p-6">
+            {editing && <input type="hidden" name="id" value={service!.id} />}
             <div className="space-y-1.5">
-              <Label htmlFor="price">Precio ($)</Label>
-              <Input id="price" name="price" type="number" min="0" step="100" defaultValue={service ? service.priceCents / 100 : ""} required placeholder="6000" />
+              <Label htmlFor="name">Nombre</Label>
+              <Input id="name" name="name" defaultValue={service?.name} required placeholder="Corte clásico" />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="duration">Duración (min)</Label>
-              <Input id="duration" name="duration" type="number" min="5" step="5" defaultValue={service?.durationMin ?? 30} required />
+              <Label htmlFor="description">Descripción</Label>
+              <Textarea id="description" name="description" defaultValue={service?.description} placeholder="Corte a máquina y tijera…" rows={3} />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="depositPct">Seña (%)</Label>
-              <Input id="depositPct" name="depositPct" type="number" min="0" max="100" step="5" defaultValue={service?.depositPct ?? 40} required />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="price">Precio ($)</Label>
+                <Input id="price" name="price" type="number" min="0" step="100" defaultValue={service ? service.priceCents / 100 : ""} required placeholder="6000" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="duration">Duración (min)</Label>
+                <Input id="duration" name="duration" type="number" min="5" step="5" defaultValue={service?.durationMin ?? 30} required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="depositPct">Seña (%)</Label>
+                <Input id="depositPct" name="depositPct" type="number" min="0" max="100" step="5" defaultValue={service?.depositPct ?? 40} required />
+              </div>
             </div>
           </div>
-          <DialogFooter>
+          <SheetFooter>
             <Button type="submit" disabled={pending}>
               {pending && <Loader2 className="h-4 w-4 animate-spin" />}
               {editing ? "Guardar cambios" : "Crear servicio"}
             </Button>
-          </DialogFooter>
+          </SheetFooter>
         </form>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 }
