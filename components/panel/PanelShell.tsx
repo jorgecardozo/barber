@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { logoutAction } from "@/lib/actions";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { SucursalSwitcher } from "@/components/panel/SucursalSwitcher";
+import type { Sucursal } from "@/lib/sucursal";
 import type { User } from "@/lib/types";
 
 type NavItem = { href: string; label: string; icon: React.ElementType; adminOnly?: boolean };
@@ -60,7 +62,17 @@ function Avatar({ user, size = 32 }: { user: User; size?: number }) {
 }
 
 // ---------- Sidebar desktop (se expande al hover) ----------
-function DesktopSidebar({ user, items }: { user: User; items: NavItem[] }) {
+function DesktopSidebar({
+  user,
+  items,
+  sucursales,
+  currentSucursalId,
+}: {
+  user: User;
+  items: NavItem[];
+  sucursales: Sucursal[];
+  currentSucursalId: string | null;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   return (
@@ -81,7 +93,13 @@ function DesktopSidebar({ user, items }: { user: User; items: NavItem[] }) {
           {open && <span className="chrome-text font-display text-lg italic tracking-wide">FLOW</span>}
         </Link>
 
-        <nav className="mt-2 flex-1 space-y-1 px-2">
+        {open && sucursales.length > 0 && (
+          <div className="px-2 pb-2">
+            <SucursalSwitcher sucursales={sucursales} currentId={currentSucursalId} />
+          </div>
+        )}
+
+        <nav className="mt-1 flex-1 space-y-1 px-2">
           {items.map((n) => {
             const Icon = n.icon;
             const on = isActive(pathname, n.href);
@@ -135,7 +153,17 @@ function DesktopSidebar({ user, items }: { user: User; items: NavItem[] }) {
 }
 
 // ---------- Navbar + drawer mobile (arrastrable) ----------
-function MobileNav({ user, items }: { user: User; items: NavItem[] }) {
+function MobileNav({
+  user,
+  items,
+  sucursales,
+  currentSucursalId,
+}: {
+  user: User;
+  items: NavItem[];
+  sucursales: Sucursal[];
+  currentSucursalId: string | null;
+}) {
   const pathname = usePathname();
   const [openMenu, setOpenMenu] = useState(false);
 
@@ -230,6 +258,12 @@ function MobileNav({ user, items }: { user: User; items: NavItem[] }) {
                 </button>
               </div>
 
+              {sucursales.length > 0 && (
+                <div className="px-3 pb-2">
+                  <SucursalSwitcher sucursales={sucursales} currentId={currentSucursalId} />
+                </div>
+              )}
+
               <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
                 {items.map((n) => {
                   const Icon = n.icon;
@@ -268,12 +302,22 @@ function MobileNav({ user, items }: { user: User; items: NavItem[] }) {
   );
 }
 
-export function PanelShell({ user, children }: { user: User; children: React.ReactNode }) {
+export function PanelShell({
+  user,
+  children,
+  sucursales = [],
+  currentSucursalId = null,
+}: {
+  user: User;
+  children: React.ReactNode;
+  sucursales?: Sucursal[];
+  currentSucursalId?: string | null;
+}) {
   const items = NAV.filter((n) => !n.adminOnly || user.role === "admin");
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-background">
-      <MobileNav user={user} items={items} />
-      <DesktopSidebar user={user} items={items} />
+      <MobileNav user={user} items={items} sucursales={sucursales} currentSucursalId={currentSucursalId} />
+      <DesktopSidebar user={user} items={items} sucursales={sucursales} currentSucursalId={currentSucursalId} />
       <div className="flex w-full flex-1 flex-col overflow-y-auto pt-14 md:pt-0 md:pl-[68px]">
         {children}
       </div>
