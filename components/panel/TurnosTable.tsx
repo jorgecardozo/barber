@@ -6,12 +6,12 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { MoreHorizontal, Loader2, ChevronLeft, ChevronRight, Search, SlidersHorizontal, X } from "lucide-react";
-import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Table,
   TableBody,
@@ -92,7 +92,6 @@ export function TurnosTable({
   const [status, setStatus] = useState("todos");
   const [method, setMethod] = useState("todos");
   const [date, setDate] = useState<Date | undefined>(new Date(today + "T12:00:00"));
-  const [showFilters, setShowFilters] = useState(false);
 
   const dateKey = date ? format(date, "yyyy-MM-dd") : null;
   const isTodayKey = dateKey === today;
@@ -169,11 +168,10 @@ export function TurnosTable({
 
   return (
     <div>
-      {/* ============ FILTROS ============ */}
+      {/* ============ FILTROS (una sola línea: buscador + Filtros ícono) ============ */}
       <div className="mb-3">
-        {/* Fila 1: buscador (siempre) + botón Filtros (solo mobile) */}
         <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+          <div className="relative min-w-0 flex-1">
             <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={q}
@@ -184,89 +182,69 @@ export function TurnosTable({
             />
           </div>
 
-          {/* Toggle "Filtros" — SOLO mobile. size=default = h-8 para alinear con el Input. */}
-          <Button
-            type="button"
-            variant="outline"
-            size="default"
-            onClick={() => setShowFilters((s) => !s)}
-            aria-expanded={showFilters}
-            aria-controls="turnos-filtros"
-            className="shrink-0 sm:hidden"
-          >
-            <SlidersHorizontal className="size-4" />
-            Filtros
-            {activeCount > 0 && (
-              <span className="ml-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-flow-cyan px-1 text-[11px] leading-none font-semibold text-background">
-                {activeCount}
-              </span>
-            )}
-          </Button>
-        </div>
-
-        {/* Controles: ocultos en mobile salvo showFilters; SIEMPRE visibles en sm+. */}
-        <div
-          id="turnos-filtros"
-          className={cn(
-            "mt-2 gap-2 sm:flex sm:flex-wrap sm:items-center",
-            showFilters ? "flex flex-wrap items-center" : "hidden"
-          )}
-        >
-          <Select value={barberId} onValueChange={setBarberId}>
-            <SelectTrigger aria-label="Filtrar por barbero" className="w-full sm:w-44">
-              <SelectValue placeholder="Barbero" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los barberos</SelectItem>
-              {barbers.map((b) => (
-                <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger aria-label="Filtrar por estado" className="w-full sm:w-44">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los estados</SelectItem>
-              {ESTADOS.map((s) => (
-                <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={method} onValueChange={setMethod}>
-            <SelectTrigger aria-label="Filtrar por método de pago" className="w-full sm:w-48">
-              <SelectValue placeholder="Método" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos los métodos</SelectItem>
-              <SelectItem value="mercadopago">MercadoPago</SelectItem>
-              <SelectItem value="efectivo">Efectivo</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <DatePicker
-            value={date}
-            onChange={setDate}
-            placeholder="Todas las fechas"
-            className="w-full sm:w-52"
-          />
-
-          {/* Limpiar — único, condicional. En sm+ vive acá (al final de la fila). */}
-          {hayFiltros && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="default"
-              onClick={limpiar}
-              className="hidden text-muted-foreground hover:text-foreground sm:ml-auto sm:inline-flex"
-            >
-              <X className="size-4" />
-              Limpiar filtros
-            </Button>
-          )}
+          {/* Botón Filtros (solo ícono) con popover — mismo patrón que kampo */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                title="Filtros"
+                className="relative inline-flex shrink-0 items-center justify-center rounded-lg border border-border bg-card px-2.5 py-2 text-foreground transition-colors hover:bg-accent"
+              >
+                <SlidersHorizontal className="size-4" />
+                {activeCount > 0 && (
+                  <span className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+                    {activeCount}
+                  </span>
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="grid w-72 gap-3 p-4">
+              <label className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Barbero</span>
+                <Select value={barberId} onValueChange={setBarberId}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Barbero" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los barberos</SelectItem>
+                    {barbers.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Estado</span>
+                <Select value={status} onValueChange={setStatus}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Estado" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los estados</SelectItem>
+                    {ESTADOS.map((s) => (
+                      <SelectItem key={s.v} value={s.v}>{s.l}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Método</span>
+                <Select value={method} onValueChange={setMethod}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Método" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos los métodos</SelectItem>
+                    <SelectItem value="mercadopago">MercadoPago</SelectItem>
+                    <SelectItem value="efectivo">Efectivo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </label>
+              <label className="grid gap-1">
+                <span className="text-xs font-medium text-muted-foreground">Fecha</span>
+                <DatePicker value={date} onChange={setDate} placeholder="Todas las fechas" className="w-full" />
+              </label>
+              {hayFiltros && (
+                <Button type="button" variant="ghost" size="sm" onClick={limpiar} className="mt-1 text-primary hover:text-primary">
+                  <X className="size-4" /> Limpiar filtros
+                </Button>
+              )}
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* Chips removibles de filtros activos. Visibles en TODOS los breakpoints. */}
