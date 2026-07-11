@@ -31,11 +31,21 @@ export default async function MisTurnosPage({
   const barbById = new Map(barbers.map((b) => [b.id, b]));
   const now = Date.now();
 
+  const rows = turnos.map((t) => {
+    const horas = (Date.parse(t.start) - now) / 3_600_000;
+    return {
+      t,
+      service: svcById.get(t.serviceId),
+      barber: barbById.get(t.barberId),
+      cancelable: (t.status === "confirmada" || t.status === "hold") && horas >= DECISIONS.cancelWindowHours,
+    };
+  });
+
   return (
     <>
       <AppHeader user={user} />
       <main className="flex-1">
-        <section className="mx-auto max-w-2xl px-5 py-12">
+        <section className="mx-auto max-w-5xl px-5 py-12">
           <div className="mb-8 flex items-end justify-between">
             <div>
               <h1 className="font-display text-3xl">
@@ -62,14 +72,57 @@ export default async function MisTurnosPage({
               </Link>
             </div>
           ) : (
-            <ul className="space-y-3">
-              {turnos.map((t) => {
-                const service = svcById.get(t.serviceId);
-                const barber = barbById.get(t.barberId);
-                const horas = (Date.parse(t.start) - now) / 3_600_000;
-                const cancelable =
-                  (t.status === "confirmada" || t.status === "hold") && horas >= DECISIONS.cancelWindowHours;
-                return (
+            <>
+              {/* Tabla (desktop) */}
+              <div className="hidden overflow-hidden rounded-2xl border border-white/8 md:block">
+                <table className="w-full text-sm">
+                  <thead className="bg-flow-red text-left text-xs uppercase tracking-wide text-white">
+                    <tr>
+                      <th className="whitespace-nowrap px-4 py-3 font-bold">Servicio</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-bold">Barbero</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-bold">Fecha</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-bold">Hora</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-bold">Seña</th>
+                      <th className="whitespace-nowrap px-4 py-3 font-bold">Estado</th>
+                      <th className="whitespace-nowrap px-4 py-3 text-right font-bold">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/8">
+                    {rows.map(({ t, service, barber, cancelable }, i) => (
+                      <tr key={t.id} className={i % 2 === 1 ? "bg-white/[0.02]" : undefined}>
+                        <td className="px-4 py-3 font-medium text-bone">{service?.name}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-ash">{barber?.name}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-bone">{fmtDateLong(t.start.slice(0, 10))}</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-bone">{fmtTime(new Date(t.start))} hs</td>
+                        <td className="whitespace-nowrap px-4 py-3 text-ash">{formatARS(t.depositCents)}</td>
+                        <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center justify-end gap-3">
+                            {t.status === "hold" && (
+                              <Link href={`/reservar/pago/${t.id}`} className="rounded-full bg-flow-red px-3 py-1 text-xs font-semibold text-white">
+                                Completar pago
+                              </Link>
+                            )}
+                            {cancelable && (
+                              <form action={cancelarTurnoAction}>
+                                <input type="hidden" name="id" value={t.id} />
+                                <button className="text-xs text-ash underline-offset-2 transition-colors hover:text-flow-red hover:underline">
+                                  Cancelar
+                                </button>
+                              </form>
+                            )}
+                            {t.status !== "hold" && !cancelable && <span className="text-xs text-ash/50">—</span>}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Tarjetas (mobile) */}
+              <ul className="space-y-3 md:hidden">
+                {rows.map(({ t, service, barber, cancelable }) => (
                   <li key={t.id} className="rounded-2xl border border-white/8 bg-ink-2 p-5">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -100,9 +153,9 @@ export default async function MisTurnosPage({
                       </form>
                     )}
                   </li>
-                );
-              })}
-            </ul>
+                ))}
+              </ul>
+            </>
           )}
         </section>
       </main>
