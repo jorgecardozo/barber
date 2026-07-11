@@ -8,9 +8,9 @@ import { es } from "date-fns/locale";
 import { MoreHorizontal, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
-import { DataTable, type Column } from "@/components/panel/DataTable";
+import { DataTable, ColumnsToggle, useColumnVisibility, type Column } from "@/components/panel/DataTable";
 import { PageHeader } from "@/components/panel/PageHeader";
-import { Badge, FiltersBar, FilterField, FilterSelect, Pagination, type BadgeTone } from "@/components/panel/ui";
+import { Badge, FiltersBar, FilterField, FilterSelect, Pagination, Panel, ModeToggle, type BadgeTone, type ListMode } from "@/components/panel/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,6 +85,8 @@ export function TurnosTable({
   const [status, setStatus] = useState("todos");
   const [method, setMethod] = useState("todos");
   const [date, setDate] = useState<Date | undefined>(new Date(today + "T12:00:00"));
+  const [mode, setMode] = useState<ListMode>("paged");
+  const { isVisible, toggle } = useColumnVisibility();
 
   const dateKey = date ? format(date, "yyyy-MM-dd") : null;
   const isTodayKey = dateKey === today;
@@ -137,6 +139,7 @@ export function TurnosTable({
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const shown = mode === "infinite" ? filtered : paged;
 
   function run(action: (fd: FormData) => Promise<void>, id: string, msg: string, extra?: Record<string, string>) {
     startTransition(async () => {
@@ -157,6 +160,7 @@ export function TurnosTable({
     {
       key: "fecha",
       label: "Fecha",
+      hideable: false,
       render: (r) => (
         <div>
           <span className="text-foreground">{r.dateLabel}</span>
@@ -202,6 +206,7 @@ export function TurnosTable({
       key: "acciones",
       label: "Acciones",
       align: "right",
+      hideable: false,
       render: (r) => <RowActions row={r} run={run} disabled={pending} />,
     },
   ];
@@ -210,60 +215,64 @@ export function TurnosTable({
     <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader section="ATENCIÓN" title="Turnos" actions={headerActions} />
 
-      <FiltersBar
-        search={q}
-        onSearch={setQ}
-        searchPlaceholder="Buscar cliente o teléfono…"
-        chips={chips}
-        onClearAll={limpiar}
-        right={
-          <span className="hidden shrink-0 items-center gap-2 text-sm text-muted-foreground sm:inline-flex">
-            {filtered.length} turno{filtered.length === 1 ? "" : "s"}
-            {pending && <Loader2 className="size-3 animate-spin" />}
-          </span>
-        }
-      >
-        <FilterField label="Barbero">
-          <FilterSelect
-            value={barberId}
-            onChange={setBarberId}
-            options={[{ value: "todos", label: "Todos los barberos" }, ...barbers.map((b) => ({ value: b.id, label: b.name }))]}
-          />
-        </FilterField>
-        <FilterField label="Estado">
-          <FilterSelect
-            value={status}
-            onChange={setStatus}
-            options={[{ value: "todos", label: "Todos los estados" }, ...ESTADOS.map((s) => ({ value: s.v, label: s.l }))]}
-          />
-        </FilterField>
-        <FilterField label="Método">
-          <FilterSelect
-            value={method}
-            onChange={setMethod}
-            options={[
-              { value: "todos", label: "Todos los métodos" },
-              { value: "mercadopago", label: "MercadoPago" },
-              { value: "efectivo", label: "Efectivo" },
-            ]}
-          />
-        </FilterField>
-        <FilterField label="Fecha">
-          <DatePicker value={date} onChange={setDate} placeholder="Todas las fechas" className="w-full" />
-        </FilterField>
-      </FiltersBar>
+      <Panel className="flex min-h-0 flex-1 flex-col p-2.5 sm:p-4">
+        <FiltersBar
+          search={q}
+          onSearch={setQ}
+          searchPlaceholder="Buscar cliente o teléfono…"
+          chips={chips}
+          onClearAll={limpiar}
+          right={
+            <>
+              {pending && <Loader2 className="mr-1 hidden size-4 animate-spin text-muted-foreground sm:inline" />}
+              <ModeToggle mode={mode} onChange={setMode} />
+              <ColumnsToggle columns={columns} isVisible={isVisible} toggle={toggle} />
+            </>
+          }
+        >
+          <FilterField label="Barbero">
+            <FilterSelect
+              value={barberId}
+              onChange={setBarberId}
+              options={[{ value: "todos", label: "Todos los barberos" }, ...barbers.map((b) => ({ value: b.id, label: b.name }))]}
+            />
+          </FilterField>
+          <FilterField label="Estado">
+            <FilterSelect
+              value={status}
+              onChange={setStatus}
+              options={[{ value: "todos", label: "Todos los estados" }, ...ESTADOS.map((s) => ({ value: s.v, label: s.l }))]}
+            />
+          </FilterField>
+          <FilterField label="Método">
+            <FilterSelect
+              value={method}
+              onChange={setMethod}
+              options={[
+                { value: "todos", label: "Todos los métodos" },
+                { value: "mercadopago", label: "MercadoPago" },
+                { value: "efectivo", label: "Efectivo" },
+              ]}
+            />
+          </FilterField>
+          <FilterField label="Fecha">
+            <DatePicker value={date} onChange={setDate} placeholder="Todas las fechas" className="w-full" />
+          </FilterField>
+        </FiltersBar>
 
-      <DataTable
-        columns={columns}
-        rows={paged}
-        rowKey={(r) => r.id}
-        minWidth="820px"
-        emptyIcon="📅"
-        emptyLabel="No hay turnos con esos filtros."
-        emptyDescription="Cambiá los filtros o registrá un turno nuevo."
-      />
+        <DataTable
+          columns={columns}
+          rows={shown}
+          rowKey={(r) => r.id}
+          isVisible={isVisible}
+          minWidth="820px"
+          emptyIcon="📅"
+          emptyLabel="No hay turnos con esos filtros."
+          emptyDescription="Cambiá los filtros o registrá un turno nuevo."
+        />
 
-      <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} />
+        {mode === "paged" && <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} />}
+      </Panel>
     </div>
   );
 }

@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DataTable, type Column } from "@/components/panel/DataTable";
+import { DataTable, ColumnsToggle, useColumnVisibility, type Column } from "@/components/panel/DataTable";
 import { PageHeader } from "@/components/panel/PageHeader";
 import { ServiceFormDrawer } from "@/components/panel/ServiceFormDrawer";
-import { FiltersBar, PrimaryButton, Pagination } from "@/components/panel/ui";
+import { FiltersBar, PrimaryButton, Pagination, Panel, ModeToggle, type ListMode } from "@/components/panel/ui";
 import { depositForPrice } from "@/lib/decisions";
 import { formatARS } from "@/lib/money";
 
@@ -22,8 +22,10 @@ const PAGE_SIZE = 12;
 export function ServicesTable({ services, isAdmin }: { services: ServiceRow[]; isAdmin: boolean }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [mode, setMode] = useState<ListMode>("paged");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState<ServiceRow | null>(null);
+  const { isVisible, toggle } = useColumnVisibility();
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -36,6 +38,7 @@ export function ServicesTable({ services, isAdmin }: { services: ServiceRow[]; i
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const shown = mode === "infinite" ? filtered : paged;
 
   const openCreate = () => { setSelected(null); setDrawerOpen(true); };
   const openEdit = (s: ServiceRow) => { setSelected(s); setDrawerOpen(true); };
@@ -44,6 +47,7 @@ export function ServicesTable({ services, isAdmin }: { services: ServiceRow[]; i
     {
       key: "name",
       label: "Servicio",
+      hideable: false,
       truncate: true,
       render: (s) => (
         <div>
@@ -74,26 +78,34 @@ export function ServicesTable({ services, isAdmin }: { services: ServiceRow[]; i
         actions={isAdmin ? <PrimaryButton onClick={openCreate}>Nuevo servicio</PrimaryButton> : undefined}
       />
 
-      <FiltersBar
-        search={search}
-        onSearch={(v) => { setSearch(v); setPage(1); }}
-        searchPlaceholder="Buscar servicio…"
-        right={<span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">{filtered.length} servicios</span>}
-      />
+      <Panel className="flex min-h-0 flex-1 flex-col p-2.5 sm:p-4">
+        <FiltersBar
+          search={search}
+          onSearch={(v) => { setSearch(v); setPage(1); }}
+          searchPlaceholder="Buscar servicio…"
+          right={
+            <>
+              <ModeToggle mode={mode} onChange={setMode} />
+              <ColumnsToggle columns={columns} isVisible={isVisible} toggle={toggle} />
+            </>
+          }
+        />
 
-      <DataTable
-        columns={columns}
-        rows={paged}
-        rowKey={(s) => s.id}
-        onRowClick={isAdmin ? openEdit : undefined}
-        selectedKey={drawerOpen ? selected?.id : null}
-        emptyIcon="✂️"
-        emptyLabel={search ? "Sin resultados" : "Todavía no hay servicios"}
-        emptyDescription={search ? "Probá con otra búsqueda." : "Cargá tu primer servicio."}
-        minWidth="640px"
-      />
+        <DataTable
+          columns={columns}
+          rows={shown}
+          rowKey={(s) => s.id}
+          isVisible={isVisible}
+          onRowClick={isAdmin ? openEdit : undefined}
+          selectedKey={drawerOpen ? selected?.id : null}
+          emptyIcon="✂️"
+          emptyLabel={search ? "Sin resultados" : "Todavía no hay servicios"}
+          emptyDescription={search ? "Probá con otra búsqueda." : "Cargá tu primer servicio."}
+          minWidth="640px"
+        />
 
-      <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} />
+        {mode === "paged" && <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} />}
+      </Panel>
 
       <ServiceFormDrawer
         open={drawerOpen}

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { DataTable, type Column } from "@/components/panel/DataTable";
+import { DataTable, ColumnsToggle, useColumnVisibility, type Column } from "@/components/panel/DataTable";
 import { PageHeader } from "@/components/panel/PageHeader";
 import { BarberFormDrawer } from "@/components/panel/BarberFormDrawer";
 import { BarberActiveToggle } from "@/components/panel/BarberActiveToggle";
-import { FiltersBar, PrimaryButton, Pagination, Badge } from "@/components/panel/ui";
+import { FiltersBar, PrimaryButton, Pagination, Badge, Panel, ModeToggle, type ListMode } from "@/components/panel/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export type BarberRow = {
@@ -23,8 +23,10 @@ const PAGE_SIZE = 12;
 export function BarbersTable({ barbers, isAdmin }: { barbers: BarberRow[]; isAdmin: boolean }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [mode, setMode] = useState<ListMode>("paged");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState<BarberRow | null>(null);
+  const { isVisible, toggle } = useColumnVisibility();
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -40,6 +42,7 @@ export function BarbersTable({ barbers, isAdmin }: { barbers: BarberRow[]; isAdm
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const shown = mode === "infinite" ? filtered : paged;
 
   const openCreate = () => { setSelected(null); setDrawerOpen(true); };
   const openEdit = (b: BarberRow) => { setSelected(b); setDrawerOpen(true); };
@@ -48,6 +51,7 @@ export function BarbersTable({ barbers, isAdmin }: { barbers: BarberRow[]; isAdm
     {
       key: "name",
       label: "Barbero",
+      hideable: false,
       render: (b) => (
         <div className="flex items-center gap-3">
           <Avatar className="h-9 w-9 shrink-0">
@@ -85,26 +89,34 @@ export function BarbersTable({ barbers, isAdmin }: { barbers: BarberRow[]; isAdm
         actions={<PrimaryButton onClick={openCreate}>Nuevo barbero</PrimaryButton>}
       />
 
-      <FiltersBar
-        search={search}
-        onSearch={(v) => { setSearch(v); setPage(1); }}
-        searchPlaceholder="Buscar barbero, especialidad o email…"
-        right={<span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">{filtered.length} barberos</span>}
-      />
+      <Panel className="flex min-h-0 flex-1 flex-col p-2.5 sm:p-4">
+        <FiltersBar
+          search={search}
+          onSearch={(v) => { setSearch(v); setPage(1); }}
+          searchPlaceholder="Buscar barbero, especialidad o email…"
+          right={
+            <>
+              <ModeToggle mode={mode} onChange={setMode} />
+              <ColumnsToggle columns={columns} isVisible={isVisible} toggle={toggle} />
+            </>
+          }
+        />
 
-      <DataTable
-        columns={columns}
-        rows={paged}
-        rowKey={(b) => b.id}
-        onRowClick={openEdit}
-        selectedKey={drawerOpen ? selected?.id : null}
-        emptyIcon="✂️"
-        emptyLabel={search ? "Sin resultados" : "Todavía no hay barberos"}
-        emptyDescription={search ? "Probá con otra búsqueda." : "Cargá tu equipo o esperá a que se registren."}
-        minWidth="760px"
-      />
+        <DataTable
+          columns={columns}
+          rows={shown}
+          rowKey={(b) => b.id}
+          isVisible={isVisible}
+          onRowClick={openEdit}
+          selectedKey={drawerOpen ? selected?.id : null}
+          emptyIcon="✂️"
+          emptyLabel={search ? "Sin resultados" : "Todavía no hay barberos"}
+          emptyDescription={search ? "Probá con otra búsqueda." : "Cargá tu equipo o esperá a que se registren."}
+          minWidth="760px"
+        />
 
-      <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} />
+        {mode === "paged" && <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} />}
+      </Panel>
 
       <p className="mt-4 shrink-0 text-sm text-muted-foreground">
         ¿Un barbero nuevo? Decile que se registre en{" "}

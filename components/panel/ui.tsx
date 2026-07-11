@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ChevronLeft, ChevronRight, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, List, MousePointer2, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -15,6 +15,44 @@ import {
 // Primitivos de panel con la MISMA estructura/estilos que kampo
 // (campo-front/src/modules/shared/ui), adaptados a los tokens de flow-site
 // (primary rojo, ink oscuro, cyan de acento). Ver docs/PORT-KAMPO.md.
+
+// ---------- Panel (card contenedora, como kampo) ----------
+export function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cn("rounded-2xl border border-border bg-card", className)}>{children}</div>
+  );
+}
+
+// ---------- Toggle de modo de lista (paginado / scroll) ----------
+export type ListMode = "paged" | "infinite";
+
+export function ModeToggle({ mode, onChange }: { mode: ListMode; onChange: (m: ListMode) => void }) {
+  const base = "inline-flex items-center justify-center px-2.5 py-2 transition-colors";
+  return (
+    <div className="hidden overflow-hidden rounded-lg border border-border sm:inline-flex">
+      <button
+        type="button"
+        title="Paginado"
+        onClick={() => onChange("paged")}
+        className={cn(base, mode === "paged" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-accent")}
+      >
+        <List className="h-4 w-4" />
+      </button>
+      <button
+        type="button"
+        title="Ver todo (scroll)"
+        onClick={() => onChange("infinite")}
+        className={cn(
+          base,
+          "border-l border-border",
+          mode === "infinite" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-accent",
+        )}
+      >
+        <MousePointer2 className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
 
 // ---------- Búsqueda ----------
 export function SearchInput({

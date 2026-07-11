@@ -102,59 +102,58 @@ export function DataTable<T>({
   const cols = isVisible ? columns.filter((c) => isVisible(c.key)) : columns;
   const showEmpty = rows.length === 0;
 
+  // Wrapper rounded + overflow-hidden → recorta las esquinas (header y filas).
+  // El scroll vive en un div interno para que el header sticky quede clippeado.
   return (
-    <div
-      className={cn(
-        showEmpty ? "flex flex-1 flex-col" : "flex min-h-0 flex-1 flex-col overflow-auto overscroll-contain",
-        "rounded-xl border border-border [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
-      )}
-    >
-      <table className="w-full text-sm" style={{ minWidth }}>
-        <thead className="sticky top-0 z-10 bg-primary text-left text-xs uppercase tracking-wide text-primary-foreground">
-          <tr>
-            {cols.map((c) => (
-              <th key={c.key} className={cn("whitespace-nowrap px-3 py-3 font-bold sm:px-4", alignClass(c.align))}>
-                {c.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {rows.map((r, i) => {
-            const selected = selectedKey != null && rowKey(r) === selectedKey;
-            return (
-              <tr
-                key={rowKey(r)}
-                onClick={onRowClick ? () => onRowClick(r) : undefined}
-                className={cn(
-                  "transition-colors",
-                  onRowClick && "cursor-pointer",
-                  selected
-                    ? "bg-primary/10 shadow-[inset_3px_0_0_0_var(--color-primary)]"
-                    : cn(i % 2 === 1 ? "bg-muted/40" : "bg-card", "hover:bg-accent/60"),
-                )}
-              >
-                {cols.map((c) => (
-                  <td
-                    key={c.key}
-                    className={cn("whitespace-nowrap px-3 py-2.5 text-foreground sm:px-4", alignClass(c.align), c.className)}
-                  >
-                    {c.truncate ? (
-                      <span className="block max-w-[140px] truncate sm:max-w-[220px]">{c.render(r)}</span>
-                    ) : (
-                      c.render(r)
-                    )}
-                  </td>
-                ))}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {showEmpty && (
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-border">
+      {showEmpty ? (
         <div className="flex flex-1 items-center justify-center">
           <EmptyState icon={emptyIcon} title={emptyLabel} description={emptyDescription} action={emptyAction} />
+        </div>
+      ) : (
+        <div className="min-h-0 flex-1 overflow-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <table className="w-full text-sm" style={{ minWidth }}>
+            <thead className="sticky top-0 z-10 bg-primary text-left text-xs uppercase tracking-wide text-primary-foreground">
+              <tr>
+                {cols.map((c) => (
+                  <th key={c.key} className={cn("whitespace-nowrap px-3 py-3 font-bold sm:px-4", alignClass(c.align))}>
+                    {c.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((r, i) => {
+                const selected = selectedKey != null && rowKey(r) === selectedKey;
+                return (
+                  <tr
+                    key={rowKey(r)}
+                    onClick={onRowClick ? () => onRowClick(r) : undefined}
+                    className={cn(
+                      "transition-colors",
+                      onRowClick && "cursor-pointer",
+                      selected
+                        ? "bg-primary/10 shadow-[inset_3px_0_0_0_var(--color-primary)]"
+                        : cn(i % 2 === 1 ? "bg-muted/40" : "bg-card", "hover:bg-accent/60"),
+                    )}
+                  >
+                    {cols.map((c) => (
+                      <td
+                        key={c.key}
+                        className={cn("whitespace-nowrap px-3 py-2.5 text-foreground sm:px-4", alignClass(c.align), c.className)}
+                      >
+                        {c.truncate ? (
+                          <span className="block max-w-[140px] truncate sm:max-w-[220px]">{c.render(r)}</span>
+                        ) : (
+                          c.render(r)
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
