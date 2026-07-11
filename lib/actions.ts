@@ -160,6 +160,11 @@ export async function updateTurnoAction(formData: FormData) {
   if (staff.role === "barbero" && appt.barberId !== staff.barberId) redirect("/panel");
   const barberId =
     staff.role === "barbero" ? appt.barberId : String(formData.get("barberId") || appt.barberId);
+  const ESTADOS_EDITABLES = ["confirmada", "en_curso", "completada", "no_show", "cancelada"] as const;
+  const rawStatus = String(formData.get("status") || "");
+  const status = (ESTADOS_EDITABLES as readonly string[]).includes(rawStatus)
+    ? (rawStatus as (typeof ESTADOS_EDITABLES)[number])
+    : undefined;
   await updateAppointment(id, {
     customerName: String(formData.get("customerName") || "").trim() || appt.customerName,
     customerPhone: String(formData.get("customerPhone") || "").trim(),
@@ -168,6 +173,7 @@ export async function updateTurnoAction(formData: FormData) {
     serviceId: String(formData.get("serviceId") || appt.serviceId),
     dateStr: String(formData.get("date") || appt.start.slice(0, 10)),
     timeHHMM: String(formData.get("time") || appt.start.slice(11, 16)),
+    status,
   });
   revalidatePath("/panel/turnos");
   revalidatePath("/panel");

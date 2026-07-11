@@ -411,6 +411,7 @@ export async function updateAppointment(
     serviceId: string;
     dateStr: string; // yyyy-mm-dd (AR)
     timeHHMM: string; // HH:mm (AR)
+    status?: Appointment["status"];
   },
 ): Promise<Appointment> {
   const appt = await getAppointment(id);
@@ -440,6 +441,7 @@ export async function updateAppointment(
       deposit_cents: deposit,
       starts_at: start.toISOString(),
       ends_at: end.toISOString(),
+      ...(input.status ? { status: input.status } : {}),
     })
     .eq("id", id);
   if (isExclusion(error)) throw new SlotTakenError();
