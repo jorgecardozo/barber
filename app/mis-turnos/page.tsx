@@ -1,13 +1,10 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { AppHeader } from "@/components/AppHeader";
-import { StatusBadge } from "@/components/StatusBadge";
+import { PanelShell, CLIENT_SECTIONS } from "@/components/panel/PanelShell";
+import { MisTurnosView, type MisTurnoRow } from "@/components/panel/MisTurnosView";
 import { getSessionUser } from "@/lib/auth";
 import { appointmentsForCustomer, listBarbers, listServices } from "@/lib/store";
-import { cancelarTurnoAction } from "@/lib/actions";
 import { DECISIONS } from "@/lib/decisions";
-import { formatARS } from "@/lib/money";
 import { fmtDateLong, fmtTime } from "@/lib/time";
 
 export const metadata: Metadata = { title: "Mis turnos · Flow Site" };
@@ -31,134 +28,29 @@ export default async function MisTurnosPage({
   const barbById = new Map(barbers.map((b) => [b.id, b]));
   const now = Date.now();
 
-  const rows = turnos.map((t) => {
+  const rows: MisTurnoRow[] = turnos.map((t) => {
     const horas = (Date.parse(t.start) - now) / 3_600_000;
     return {
-      t,
-      service: svcById.get(t.serviceId),
-      barber: barbById.get(t.barberId),
+      id: t.id,
+      serviceName: svcById.get(t.serviceId)?.name ?? "Servicio",
+      barberName: barbById.get(t.barberId)?.name ?? "Barbero",
+      dateLabel: fmtDateLong(t.start.slice(0, 10)),
+      time: fmtTime(new Date(t.start)),
+      depositCents: t.depositCents,
+      status: t.status,
+      isHold: t.status === "hold",
       cancelable: (t.status === "confirmada" || t.status === "hold") && horas >= DECISIONS.cancelWindowHours,
     };
   });
 
   return (
-    <>
-      <AppHeader user={user} />
-      <main className="flex-1">
-        <section className="mx-auto max-w-5xl px-5 py-12">
-          <div className="mb-8 flex items-end justify-between">
-            <div>
-              <h1 className="font-display text-3xl">
-                Mis <span className="chrome-text italic">turnos</span>
-              </h1>
-              <p className="mt-1 text-sm text-ash">Hola, {user.name.split(" ")[0]} 👋</p>
-            </div>
-            <Link href="/reservar" className="rounded-full bg-flow-red px-5 py-2.5 text-sm font-semibold text-white">
-              + Nuevo turno
-            </Link>
-          </div>
-
-          {sp.error === "tarde" && (
-            <p className="mb-5 rounded-xl border border-flow-red/40 bg-flow-red/10 px-4 py-3 text-sm text-bone">
-              No se puede cancelar con menos de {DECISIONS.cancelWindowHours} hs de anticipación.
-            </p>
-          )}
-
-          {turnos.length === 0 ? (
-            <div className="rounded-2xl border border-white/8 bg-ink-2 p-10 text-center">
-              <p className="text-ash">Todavía no tenés turnos.</p>
-              <Link href="/reservar" className="mt-5 inline-block rounded-full bg-flow-red px-6 py-2.5 font-semibold text-white">
-                Reservar mi primer turno
-              </Link>
-            </div>
-          ) : (
-            <>
-              {/* Tabla (desktop) */}
-              <div className="hidden overflow-hidden rounded-2xl border border-white/8 md:block">
-                <table className="w-full text-sm">
-                  <thead className="bg-flow-red text-left text-xs uppercase tracking-wide text-white">
-                    <tr>
-                      <th className="whitespace-nowrap px-4 py-3 font-bold">Servicio</th>
-                      <th className="whitespace-nowrap px-4 py-3 font-bold">Barbero</th>
-                      <th className="whitespace-nowrap px-4 py-3 font-bold">Fecha</th>
-                      <th className="whitespace-nowrap px-4 py-3 font-bold">Hora</th>
-                      <th className="whitespace-nowrap px-4 py-3 font-bold">Seña</th>
-                      <th className="whitespace-nowrap px-4 py-3 font-bold">Estado</th>
-                      <th className="whitespace-nowrap px-4 py-3 text-right font-bold">Acciones</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/8">
-                    {rows.map(({ t, service, barber, cancelable }, i) => (
-                      <tr key={t.id} className={i % 2 === 1 ? "bg-white/[0.02]" : undefined}>
-                        <td className="px-4 py-3 font-medium text-bone">{service?.name}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-ash">{barber?.name}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-bone">{fmtDateLong(t.start.slice(0, 10))}</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-bone">{fmtTime(new Date(t.start))} hs</td>
-                        <td className="whitespace-nowrap px-4 py-3 text-ash">{formatARS(t.depositCents)}</td>
-                        <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-3">
-                            {t.status === "hold" && (
-                              <Link href={`/reservar/pago/${t.id}`} className="rounded-full bg-flow-red px-3 py-1 text-xs font-semibold text-white">
-                                Completar pago
-                              </Link>
-                            )}
-                            {cancelable && (
-                              <form action={cancelarTurnoAction}>
-                                <input type="hidden" name="id" value={t.id} />
-                                <button className="text-xs text-ash underline-offset-2 transition-colors hover:text-flow-red hover:underline">
-                                  Cancelar
-                                </button>
-                              </form>
-                            )}
-                            {t.status !== "hold" && !cancelable && <span className="text-xs text-ash/50">—</span>}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Tarjetas (mobile) */}
-              <ul className="space-y-3 md:hidden">
-                {rows.map(({ t, service, barber, cancelable }) => (
-                  <li key={t.id} className="rounded-2xl border border-white/8 bg-ink-2 p-5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <h3 className="font-display text-xl">{service?.name}</h3>
-                        <p className="text-sm text-ash">con {barber?.name}</p>
-                      </div>
-                      <StatusBadge status={t.status} />
-                    </div>
-                    <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ash">
-                      <span className="text-bone">{fmtDateLong(t.start.slice(0, 10))}</span>
-                      <span className="text-bone">{fmtTime(new Date(t.start))} hs</span>
-                      <span>seña {formatARS(t.depositCents)}</span>
-                    </div>
-                    {t.status === "hold" && (
-                      <Link
-                        href={`/reservar/pago/${t.id}`}
-                        className="mt-3 inline-block rounded-full bg-flow-red px-4 py-1.5 text-xs font-semibold text-white"
-                      >
-                        Completar pago
-                      </Link>
-                    )}
-                    {cancelable && (
-                      <form action={cancelarTurnoAction} className="mt-3">
-                        <input type="hidden" name="id" value={t.id} />
-                        <button className="text-xs text-ash underline-offset-2 transition-colors hover:text-flow-red hover:underline">
-                          Cancelar turno
-                        </button>
-                      </form>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </section>
-      </main>
-    </>
+    <PanelShell user={user} navSections={CLIENT_SECTIONS} homeHref="/mis-turnos" sucursales={[]}>
+      <MisTurnosView
+        rows={rows}
+        firstName={user.name.split(" ")[0]}
+        error={sp.error}
+        cancelWindowHours={DECISIONS.cancelWindowHours}
+      />
+    </PanelShell>
   );
 }

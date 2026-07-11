@@ -89,11 +89,13 @@ function DesktopSidebar({
   sections,
   sucursales,
   currentSucursalId,
+  homeHref,
 }: {
   user: User;
   sections: Section[];
   sucursales: Sucursal[];
   currentSucursalId: string | null;
+  homeHref: string;
 }) {
   const pathname = usePathname();
   // Igual que kampo (Layout.tsx): la sidebar se abre al pasar el mouse por encima
@@ -131,7 +133,7 @@ function DesktopSidebar({
         </span>
 
         {/* Logo */}
-        <Link href="/panel" className="flex h-14 shrink-0 items-center gap-2 overflow-hidden px-4">
+        <Link href={homeHref} className="flex h-14 shrink-0 items-center gap-2 overflow-hidden px-4">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
             F
           </span>
@@ -250,11 +252,13 @@ function MobileNav({
   sections,
   sucursales,
   currentSucursalId,
+  homeHref,
 }: {
   user: User;
   sections: Section[];
   sucursales: Sucursal[];
   currentSucursalId: string | null;
+  homeHref: string;
 }) {
   const pathname = usePathname();
   const [openMenu, setOpenMenu] = useState(false);
@@ -319,7 +323,7 @@ function MobileNav({
         >
           <Menu className="h-5 w-5" />
         </button>
-        <Link href="/panel" className="chrome-text font-display text-lg italic">FLOW SITE</Link>
+        <Link href={homeHref} className="chrome-text font-display text-lg italic">FLOW SITE</Link>
         <Link href="/perfil"><Avatar user={user} /></Link>
       </header>
 
@@ -408,21 +412,24 @@ export function PanelShell({
   children,
   sucursales = [],
   currentSucursalId = null,
+  navSections = SECTIONS,
+  homeHref = "/panel",
 }: {
   user: User;
   children: React.ReactNode;
   sucursales?: Sucursal[];
   currentSucursalId?: string | null;
+  navSections?: Section[];
+  homeHref?: string;
 }) {
-  const sections = SECTIONS.map((s) => ({
-    ...s,
-    items: s.items.filter((n) => !n.adminOnly || user.role === "admin"),
-  })).filter((s) => s.items.length > 0);
+  const sections = navSections
+    .map((s) => ({ ...s, items: s.items.filter((n) => !n.adminOnly || user.role === "admin") }))
+    .filter((s) => s.items.length > 0);
 
   return (
     <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-background">
-      <DesktopSidebar user={user} sections={sections} sucursales={sucursales} currentSucursalId={currentSucursalId} />
-      <MobileNav user={user} sections={sections} sucursales={sucursales} currentSucursalId={currentSucursalId} />
+      <DesktopSidebar user={user} sections={sections} sucursales={sucursales} currentSucursalId={currentSucursalId} homeHref={homeHref} />
+      <MobileNav user={user} sections={sections} sucursales={sucursales} currentSucursalId={currentSucursalId} homeHref={homeHref} />
       {/* La sidebar desktop es fixed (rail w-20) → el contenido deja pl-20 y la
           versión expandida al hover se superpone sin empujar. */}
       <div className="flex w-full flex-1 flex-col overflow-y-auto pt-14 md:pt-0 md:pl-20">
@@ -431,3 +438,15 @@ export function PanelShell({
     </div>
   );
 }
+
+// Secciones de navegación para el rol CLIENTE (reutiliza el mismo shell).
+export const CLIENT_SECTIONS: Section[] = [
+  {
+    title: "TURNOS",
+    items: [
+      { href: "/mis-turnos", label: "Mis turnos", icon: CalendarDays },
+      { href: "/reservar", label: "Reservar", icon: Scissors },
+    ],
+  },
+  { title: "CUENTA", items: [{ href: "/perfil", label: "Perfil", icon: Users }] },
+];
