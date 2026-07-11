@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { DataTable, ColumnsToggle, useColumnVisibility, type Column } from "@/components/panel/DataTable";
 import { PageHeader } from "@/components/panel/PageHeader";
-import { Badge, FiltersBar, FilterField, FilterSelect, Pagination, Panel, ModeToggle, type BadgeTone, type ListMode } from "@/components/panel/ui";
+import { Badge, FiltersBar, FilterField, FilterSelect, Pagination, InfiniteFooter, Panel, ModeToggle, type BadgeTone, type ListMode } from "@/components/panel/ui";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -135,11 +135,13 @@ export function TurnosTable({
 
   const PAGE_SIZE = 20;
   const [page, setPage] = useState(1);
-  useEffect(() => setPage(1), [q, barberId, status, method, dateKey]);
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  useEffect(() => { setPage(1); setVisible(PAGE_SIZE); }, [q, barberId, status, method, dateKey]);
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-  const shown = mode === "infinite" ? filtered : paged;
+  const shown = mode === "infinite" ? filtered.slice(0, visible) : paged;
+  const hasNext = mode === "infinite" && visible < filtered.length;
 
   function run(action: (fd: FormData) => Promise<void>, id: string, msg: string, extra?: Record<string, string>) {
     startTransition(async () => {
@@ -225,7 +227,7 @@ export function TurnosTable({
           right={
             <>
               {pending && <Loader2 className="mr-1 hidden size-4 animate-spin text-muted-foreground sm:inline" />}
-              <ModeToggle mode={mode} onChange={setMode} />
+              <ModeToggle mode={mode} onChange={(m) => { setMode(m); setVisible(PAGE_SIZE); }} />
               <ColumnsToggle columns={columns} isVisible={isVisible} toggle={toggle} />
             </>
           }
@@ -269,9 +271,14 @@ export function TurnosTable({
           emptyIcon="📅"
           emptyLabel="No hay turnos con esos filtros."
           emptyDescription="Cambiá los filtros o registrá un turno nuevo."
+          onReachEnd={hasNext ? () => setVisible((v) => v + PAGE_SIZE) : undefined}
         />
 
-        {mode === "paged" && <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} />}
+        {mode === "paged" ? (
+          <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} />
+        ) : (
+          <InfiniteFooter shown={Math.min(visible, filtered.length)} total={filtered.length} hasNext={hasNext} />
+        )}
       </Panel>
     </div>
   );

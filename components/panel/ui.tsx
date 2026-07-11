@@ -318,6 +318,24 @@ export function FiltersBar({
   );
 }
 
+// ---------- Pie del modo scroll (cuántas se ven de cuántas) ----------
+export function InfiniteFooter({
+  shown,
+  total,
+  hasNext,
+}: {
+  shown: number;
+  total: number;
+  hasNext: boolean;
+}) {
+  if (total === 0) return null;
+  return (
+    <div className="pt-4 text-center text-sm text-muted-foreground">
+      {hasNext ? `Desplazate para ver más (${shown} de ${total})` : `Fin de la lista · ${total} en total`}
+    </div>
+  );
+}
+
 // ---------- Paginación numerada (estilo kampo) ----------
 export function Pagination({
   page,

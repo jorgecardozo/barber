@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, Columns3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -86,6 +86,7 @@ export function DataTable<T>({
   onRowClick,
   selectedKey,
   minWidth = "680px",
+  onReachEnd,
 }: {
   columns: Column<T>[];
   rows: T[];
@@ -98,9 +99,25 @@ export function DataTable<T>({
   onRowClick?: (row: T) => void;
   selectedKey?: string | null;
   minWidth?: string;
+  onReachEnd?: () => void; // scroll infinito: se llama al acercarse al final
 }) {
   const cols = isVisible ? columns.filter((c) => isVisible(c.key)) : columns;
   const showEmpty = rows.length === 0;
+
+  // Centinela al final del scroll interno: cuando entra en vista (con margen),
+  // pedimos más filas. (Mismo patrón que kampo/DataTable.)
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !onReachEnd) return;
+    const obs = new IntersectionObserver((entries) => { if (entries[0]?.isIntersecting) onReachEnd(); }, {
+      root: scrollRef.current,
+      rootMargin: "250px 0px",
+    });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [onReachEnd, rows.length]);
 
   // Wrapper rounded + overflow-hidden → recorta las esquinas (header y filas).
   // El scroll vive en un div interno para que el header sticky quede clippeado.
@@ -111,7 +128,7 @@ export function DataTable<T>({
           <EmptyState icon={emptyIcon} title={emptyLabel} description={emptyDescription} action={emptyAction} />
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <table className="w-full text-sm" style={{ minWidth }}>
             <thead className="sticky top-0 z-10 bg-primary text-left text-xs uppercase tracking-wide text-primary-foreground">
               <tr>
@@ -154,6 +171,7 @@ export function DataTable<T>({
               })}
             </tbody>
           </table>
+          {onReachEnd && <div ref={sentinelRef} aria-hidden className="h-px w-full" />}
         </div>
       )}
     </div>
