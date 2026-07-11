@@ -83,7 +83,7 @@ function Avatar({ user, size = 32 }: { user: User; size?: number }) {
   );
 }
 
-// ---------- Sidebar desktop (colapsable con toggle, como kampo) ----------
+// ---------- Sidebar desktop (se expande al hover, como kampo) ----------
 function DesktopSidebar({
   user,
   sections,
@@ -96,20 +96,12 @@ function DesktopSidebar({
   currentSucursalId: string | null;
 }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(true);
+  // Igual que kampo (Layout.tsx): la sidebar se abre al pasar el mouse por encima
+  // y se cierra al salir. Fija (fixed) → la versión expandida se superpone al
+  // contenido, sin empujarlo ni tapar con overlay.
+  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    const saved = localStorage.getItem("panelSidebarOpen");
-    if (saved != null) setOpen(saved === "true");
-  }, []);
-  const toggleOpen = () =>
-    setOpen((v) => {
-      const nv = !v;
-      try { localStorage.setItem("panelSidebarOpen", String(nv)); } catch {}
-      return nv;
-    });
 
   const activeSection = sections.find((s) => s.items.some((it) => isActive(pathname, it.href)))?.title;
   const isSectionOpen = (title: string) =>
@@ -120,131 +112,135 @@ function DesktopSidebar({
   const visible = useMemo(() => filterSections(sections, query), [sections, query]);
 
   return (
-    <aside
-      className={`relative hidden h-full shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl transition-[width] duration-300 md:flex ${
-        open ? "w-60" : "w-[76px]"
-      }`}
+    <div
+      className="fixed inset-y-0 left-0 z-50 hidden md:block"
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => { setOpen(false); setQuery(""); }}
     >
-      {/* Toggle circular sobre el borde (como kampo) */}
-      <button
-        type="button"
-        onClick={toggleOpen}
-        title={open ? "Colapsar menú" : "Expandir menú"}
-        className="absolute -right-3 top-8 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary bg-primary text-primary-foreground shadow-md"
+      <aside
+        className={`relative flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl transition-[width] duration-300 ${
+          open ? "w-64" : "w-20"
+        }`}
       >
-        <ChevronsLeft className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? "" : "rotate-180"}`} />
-      </button>
-
-      {/* Logo */}
-      <Link href="/panel" className="flex h-14 shrink-0 items-center gap-2 overflow-hidden px-4">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
-          F
+        {/* Indicador de estado sobre el borde (como kampo) */}
+        <span
+          title={open ? "Menú" : "Pasá el mouse para expandir"}
+          className="absolute -right-3 top-8 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary bg-primary text-primary-foreground shadow-md"
+        >
+          <ChevronsLeft className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? "" : "rotate-180"}`} />
         </span>
-        {open && <span className="chrome-text font-display text-lg italic tracking-wide">FLOW</span>}
-      </Link>
 
-      {/* Buscador (solo abierta) */}
-      {open && (
-        <div className="px-3 pb-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar menú…"
-              className="w-full rounded-lg border border-border bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground placeholder-muted-foreground outline-none focus:ring-2 focus:ring-ring"
-            />
+        {/* Logo */}
+        <Link href="/panel" className="flex h-14 shrink-0 items-center gap-2 overflow-hidden px-4">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
+            F
+          </span>
+          {open && <span className="chrome-text font-display text-lg italic tracking-wide">FLOW</span>}
+        </Link>
+
+        {/* Buscador (solo abierta) */}
+        {open && (
+          <div className="px-3 pb-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar menú…"
+                className="w-full rounded-lg border border-border bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground placeholder-muted-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {open && sucursales.length > 0 && (
-        <div className="px-3 pb-2">
-          <SucursalSwitcher sucursales={sucursales} currentId={currentSucursalId} />
-        </div>
-      )}
+        {open && sucursales.length > 0 && (
+          <div className="px-3 pb-2">
+            <SucursalSwitcher sucursales={sucursales} currentId={currentSucursalId} />
+          </div>
+        )}
 
-      {/* Secciones + ítems */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-1 [scrollbar-width:thin]">
-        {visible.map((section, i) => {
-          const secOpen = isSectionOpen(section.title);
-          return (
-            <div key={section.title}>
-              {open && (
-                <button
-                  type="button"
-                  onClick={() => toggleSection(section.title)}
-                  className="mb-0.5 mt-2 flex w-full items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent"
-                >
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    {section.title}
-                  </span>
-                  <ChevronDown
-                    className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${secOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-              )}
-              {secOpen && (
-                <ul className="space-y-0.5">
-                  {section.items.map((n) => {
-                    const Icon = n.icon;
-                    const on = isActive(pathname, n.href);
-                    return (
-                      <li key={n.href}>
-                        <Link
-                          href={n.href}
-                          title={n.label}
-                          className={`flex items-center gap-x-3 rounded-md p-2 text-sm font-medium transition-colors ${
-                            open ? "" : "justify-center"
-                          } ${
-                            on
-                              ? "bg-primary text-primary-foreground"
-                              : "text-muted-foreground hover:bg-primary hover:text-primary-foreground"
-                          }`}
-                        >
-                          <Icon className="h-[18px] w-[18px] shrink-0" />
-                          {open && <span className="truncate">{n.label}</span>}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-              {i < visible.length - 1 && open && <div className="my-2 h-px bg-sidebar-border" />}
-            </div>
-          );
-        })}
-      </nav>
+        {/* Secciones + ítems */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-1 [scrollbar-width:thin]">
+          {visible.map((section, i) => {
+            const secOpen = isSectionOpen(section.title);
+            return (
+              <div key={section.title}>
+                {open && (
+                  <button
+                    type="button"
+                    onClick={() => toggleSection(section.title)}
+                    className="mb-0.5 mt-2 flex w-full items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent"
+                  >
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {section.title}
+                    </span>
+                    <ChevronDown
+                      className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${secOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+                )}
+                {secOpen && (
+                  <ul className="space-y-0.5">
+                    {section.items.map((n) => {
+                      const Icon = n.icon;
+                      const on = isActive(pathname, n.href);
+                      return (
+                        <li key={n.href}>
+                          <Link
+                            href={n.href}
+                            title={n.label}
+                            className={`flex items-center gap-x-3 rounded-md p-2 text-sm font-medium transition-colors ${
+                              open ? "" : "justify-center"
+                            } ${
+                              on
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                            }`}
+                          >
+                            <Icon className="h-[18px] w-[18px] shrink-0" />
+                            {open && <span className="truncate">{n.label}</span>}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                {i < visible.length - 1 && open && <div className="my-2 h-px bg-sidebar-border" />}
+              </div>
+            );
+          })}
+        </nav>
 
-      {/* Usuario + tema + logout */}
-      <div className="shrink-0 space-y-1 border-t border-sidebar-border p-2">
-        <div className={`flex items-center gap-2 px-1 py-1 ${open ? "" : "justify-center"}`}>
-          <Avatar user={user} size={30} />
-          {open && (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">{user.name}</p>
-              <p className="truncate text-xs text-flow-cyan">{user.role}</p>
-            </div>
-          )}
+        {/* Usuario + tema + logout */}
+        <div className="shrink-0 space-y-1 border-t border-sidebar-border p-2">
+          <div className={`flex items-center gap-2 px-1 py-1 ${open ? "" : "justify-center"}`}>
+            <Avatar user={user} size={30} />
+            {open && (
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">{user.name}</p>
+                <p className="truncate text-xs text-flow-cyan">{user.role}</p>
+              </div>
+            )}
+          </div>
+          <div className={`flex items-center gap-2 ${open ? "justify-between px-2" : "justify-center"}`}>
+            {open && <span className="text-sm text-muted-foreground">Tema</span>}
+            <ThemeToggle />
+          </div>
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              title="Cerrar sesión"
+              className={`flex w-full items-center gap-x-3 rounded-md p-2 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive ${
+                open ? "" : "justify-center"
+              }`}
+            >
+              <LogOut className="h-[18px] w-[18px] shrink-0" />
+              {open && <span>Cerrar sesión</span>}
+            </button>
+          </form>
         </div>
-        <div className={`flex items-center gap-2 ${open ? "justify-between px-2" : "justify-center"}`}>
-          {open && <span className="text-sm text-muted-foreground">Tema</span>}
-          <ThemeToggle />
-        </div>
-        <form action={logoutAction}>
-          <button
-            type="submit"
-            title="Cerrar sesión"
-            className={`flex w-full items-center gap-x-3 rounded-md p-2 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive ${
-              open ? "" : "justify-center"
-            }`}
-          >
-            <LogOut className="h-[18px] w-[18px] shrink-0" />
-            {open && <span>Cerrar sesión</span>}
-          </button>
-        </form>
-      </div>
-    </aside>
+      </aside>
+    </div>
   );
 }
 
@@ -424,13 +420,13 @@ export function PanelShell({
   })).filter((s) => s.items.length > 0);
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-background">
+    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-background">
       <DesktopSidebar user={user} sections={sections} sucursales={sucursales} currentSucursalId={currentSucursalId} />
-      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <MobileNav user={user} sections={sections} sucursales={sucursales} currentSucursalId={currentSucursalId} />
-        <div className="flex w-full flex-1 flex-col overflow-y-auto pt-14 md:pt-0">
-          {children}
-        </div>
+      <MobileNav user={user} sections={sections} sucursales={sucursales} currentSucursalId={currentSucursalId} />
+      {/* La sidebar desktop es fixed (rail w-20) → el contenido deja pl-20 y la
+          versión expandida al hover se superpone sin empujar. */}
+      <div className="flex w-full flex-1 flex-col overflow-y-auto pt-14 md:pt-0 md:pl-20">
+        {children}
       </div>
     </div>
   );

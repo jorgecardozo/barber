@@ -1,10 +1,13 @@
 "use client";
 
+import Link from "next/link";
+import { useMemo, useState } from "react";
 import { DataTable, type Column } from "@/components/panel/DataTable";
-import { BarberDialog } from "@/components/panel/BarberDialog";
+import { PageHeader } from "@/components/panel/PageHeader";
+import { BarberFormDrawer } from "@/components/panel/BarberFormDrawer";
 import { BarberActiveToggle } from "@/components/panel/BarberActiveToggle";
+import { FiltersBar, PrimaryButton, Pagination, Badge } from "@/components/panel/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 
 export type BarberRow = {
   id: string;
@@ -15,7 +18,32 @@ export type BarberRow = {
   email?: string;
 };
 
-export function BarbersTable({ barbers }: { barbers: BarberRow[] }) {
+const PAGE_SIZE = 12;
+
+export function BarbersTable({ barbers, isAdmin }: { barbers: BarberRow[]; isAdmin: boolean }) {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selected, setSelected] = useState<BarberRow | null>(null);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return barbers;
+    return barbers.filter(
+      (b) =>
+        b.name.toLowerCase().includes(q) ||
+        b.specialty.toLowerCase().includes(q) ||
+        (b.email ?? "").toLowerCase().includes(q),
+    );
+  }, [barbers, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const openCreate = () => { setSelected(null); setDrawerOpen(true); };
+  const openEdit = (b: BarberRow) => { setSelected(b); setDrawerOpen(true); };
+
   const columns: Column<BarberRow>[] = [
     {
       key: "name",
@@ -35,40 +63,63 @@ export function BarbersTable({ barbers }: { barbers: BarberRow[] }) {
     {
       key: "estado",
       label: "Estado",
-      render: (b) =>
-        b.active ? (
-          <Badge variant="outline" className="border-transparent bg-flow-cyan/15 text-flow-cyan">Activo</Badge>
-        ) : (
-          <Badge variant="outline" className="border-transparent bg-amber-400/15 text-amber-300">Pendiente</Badge>
-        ),
+      render: (b) => (b.active ? <Badge tone="cyan">Activo</Badge> : <Badge tone="amber">Pendiente</Badge>),
     },
     {
       key: "actions",
-      label: "Acciones",
+      label: "Activar",
       align: "right",
       render: (b) => (
-        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end" onClick={(e) => e.stopPropagation()}>
           <BarberActiveToggle id={b.id} active={b.active} />
-          <BarberDialog barber={{ id: b.id, name: b.name, specialty: b.specialty }} />
         </div>
       ),
     },
   ];
 
   return (
-    <DataTable
-      columns={columns}
-      rows={barbers}
-      rowKey={(b) => b.id}
-      searchPlaceholder="Buscar barbero, especialidad o email…"
-      matchesSearch={(b, q) =>
-        b.name.toLowerCase().includes(q) ||
-        b.specialty.toLowerCase().includes(q) ||
-        (b.email ?? "").toLowerCase().includes(q)
-      }
-      toolbarRight={<span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">{barbers.length} barberos</span>}
-      emptyLabel="No hay barberos"
-      minWidth="720px"
-    />
+    <>
+      <PageHeader
+        section="CONFIGURACIÓN"
+        title="Barberos"
+        actions={<PrimaryButton onClick={openCreate}>Nuevo barbero</PrimaryButton>}
+      />
+
+      <FiltersBar
+        search={search}
+        onSearch={(v) => { setSearch(v); setPage(1); }}
+        searchPlaceholder="Buscar barbero, especialidad o email…"
+        right={<span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">{filtered.length} barberos</span>}
+      />
+
+      <DataTable
+        columns={columns}
+        rows={paged}
+        rowKey={(b) => b.id}
+        onRowClick={openEdit}
+        selectedKey={drawerOpen ? selected?.id : null}
+        emptyIcon="✂️"
+        emptyLabel={search ? "Sin resultados" : "Todavía no hay barberos"}
+        emptyDescription={search ? "Probá con otra búsqueda." : "Cargá tu equipo o esperá a que se registren."}
+        minWidth="760px"
+      />
+
+      <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} />
+
+      <p className="mt-4 shrink-0 text-sm text-muted-foreground">
+        ¿Un barbero nuevo? Decile que se registre en{" "}
+        <Link href="/ingresar?tab=barbero" className="text-flow-cyan hover:underline">la página de ingreso</Link>{" "}
+        y después lo activás acá.
+      </p>
+
+      <BarberFormDrawer
+        open={drawerOpen}
+        initial={selected}
+        items={filtered}
+        isAdmin={isAdmin}
+        onNavigate={setSelected}
+        onClose={() => setDrawerOpen(false)}
+      />
+    </>
   );
 }

@@ -1,8 +1,10 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { DataTable, type Column } from "@/components/panel/DataTable";
-import { ServiceDialog } from "@/components/panel/ServiceDialog";
-import { DeleteServiceButton } from "@/components/panel/DeleteServiceButton";
+import { PageHeader } from "@/components/panel/PageHeader";
+import { ServiceFormDrawer } from "@/components/panel/ServiceFormDrawer";
+import { FiltersBar, PrimaryButton, Pagination } from "@/components/panel/ui";
 import { depositForPrice } from "@/lib/decisions";
 import { formatARS } from "@/lib/money";
 
@@ -15,7 +17,29 @@ export type ServiceRow = {
   depositPct: number;
 };
 
+const PAGE_SIZE = 12;
+
 export function ServicesTable({ services, isAdmin }: { services: ServiceRow[]; isAdmin: boolean }) {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selected, setSelected] = useState<ServiceRow | null>(null);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return services;
+    return services.filter(
+      (s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q),
+    );
+  }, [services, search]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  const openCreate = () => { setSelected(null); setDrawerOpen(true); };
+  const openEdit = (s: ServiceRow) => { setSelected(s); setDrawerOpen(true); };
+
   const columns: Column<ServiceRow>[] = [
     {
       key: "name",
@@ -29,7 +53,7 @@ export function ServicesTable({ services, isAdmin }: { services: ServiceRow[]; i
       ),
     },
     { key: "dur", label: "Duración", render: (s) => <span className="text-muted-foreground">{s.durationMin} min</span> },
-    { key: "price", label: "Precio", render: (s) => formatARS(s.priceCents) },
+    { key: "price", label: "Precio", className: "font-medium", render: (s) => formatARS(s.priceCents) },
     {
       key: "deposit",
       label: "Seña",
@@ -40,31 +64,45 @@ export function ServicesTable({ services, isAdmin }: { services: ServiceRow[]; i
         </span>
       ),
     },
-    {
-      key: "actions",
-      label: "Acciones",
-      align: "right",
-      render: (s) => (
-        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-          <ServiceDialog service={s} />
-          {isAdmin && <DeleteServiceButton id={s.id} name={s.name} />}
-        </div>
-      ),
-    },
   ];
 
   return (
-    <DataTable
-      columns={columns}
-      rows={services}
-      rowKey={(s) => s.id}
-      searchPlaceholder="Buscar servicio…"
-      matchesSearch={(s, q) =>
-        s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q)
-      }
-      toolbarRight={<span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">{services.length} servicios</span>}
-      emptyLabel="No hay servicios"
-      minWidth="640px"
-    />
+    <>
+      <PageHeader
+        section="CONFIGURACIÓN"
+        title="Servicios"
+        actions={isAdmin ? <PrimaryButton onClick={openCreate}>Nuevo servicio</PrimaryButton> : undefined}
+      />
+
+      <FiltersBar
+        search={search}
+        onSearch={(v) => { setSearch(v); setPage(1); }}
+        searchPlaceholder="Buscar servicio…"
+        right={<span className="hidden shrink-0 text-sm text-muted-foreground sm:inline">{filtered.length} servicios</span>}
+      />
+
+      <DataTable
+        columns={columns}
+        rows={paged}
+        rowKey={(s) => s.id}
+        onRowClick={isAdmin ? openEdit : undefined}
+        selectedKey={drawerOpen ? selected?.id : null}
+        emptyIcon="✂️"
+        emptyLabel={search ? "Sin resultados" : "Todavía no hay servicios"}
+        emptyDescription={search ? "Probá con otra búsqueda." : "Cargá tu primer servicio."}
+        minWidth="640px"
+      />
+
+      <Pagination page={safePage} pageSize={PAGE_SIZE} total={filtered.length} onPage={setPage} />
+
+      <ServiceFormDrawer
+        open={drawerOpen}
+        initial={selected}
+        items={filtered}
+        isAdmin={isAdmin}
+        onNavigate={setSelected}
+        onClose={() => setDrawerOpen(false)}
+      />
+    </>
   );
 }
