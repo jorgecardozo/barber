@@ -8,7 +8,17 @@ import { CircleDollarSign } from "lucide-react";
 import { Drawer, Field, inputClass } from "@/components/panel/Drawer";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
-import { METODO, ESTADOS, PayHint, type TurnoRow } from "@/components/panel/TurnosTable";
+import { METODO, ESTADOS, STATUS_TONE, PayHint, type TurnoRow } from "@/components/panel/TurnosTable";
+import type { AppointmentStatus } from "@/lib/types";
+
+// Color del texto del selector según el tono del estado (mismos colores que el badge).
+const TONE_COLOR: Record<string, string | undefined> = {
+  cyan: "#1de9d6",
+  amber: "#fcd34d",
+  red: "#fb7185",
+  green: "#34d399",
+  gray: undefined, // hereda el color de texto por defecto
+};
 import { formatARS } from "@/lib/money";
 import {
   registrarSaldoAction,
@@ -47,12 +57,14 @@ export function TurnoDetailDrawer({
   // Fecha/Hora controladas (DatePicker + TimePicker). Se sincronizan al navegar.
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [time, setTime] = useState("");
+  const [status, setStatus] = useState<AppointmentStatus>("confirmada");
   useEffect(() => {
     if (initial) {
       setDate(new Date(`${initial.dateValue}T12:00:00`));
       setTime(initial.time);
+      setStatus(initial.status);
     }
-  }, [initial?.id, initial?.dateValue, initial?.time]);
+  }, [initial?.id, initial?.dateValue, initial?.time, initial?.status]);
 
   const idx = initial ? items.findIndex((x) => x.id === initial.id) : -1;
   const canPrev = idx > 0;
@@ -142,9 +154,17 @@ export function TurnoDetailDrawer({
       </Field>
 
       <Field label="Estado">
-        <select className={inputClass} name="status" defaultValue={r.status}>
+        <select
+          className={`${inputClass} font-medium`}
+          style={{ color: TONE_COLOR[STATUS_TONE[status]] }}
+          name="status"
+          value={status}
+          onChange={(e) => setStatus(e.target.value as AppointmentStatus)}
+        >
           {ESTADOS.map((e) => (
-            <option key={e.v} value={e.v}>{e.l}</option>
+            <option key={e.v} value={e.v} style={{ color: TONE_COLOR[STATUS_TONE[e.v]] ?? "#f4f4f5" }}>
+              {e.l}
+            </option>
           ))}
         </select>
       </Field>
