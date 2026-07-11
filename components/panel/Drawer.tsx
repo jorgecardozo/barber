@@ -115,7 +115,7 @@ export function Drawer({
               }}
               className="flex flex-1 flex-col overflow-hidden"
             >
-              <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-6 sm:py-5">
+              <div className="grid flex-1 auto-rows-min content-start grid-cols-1 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-6 sm:py-5">
                 {children}
               </div>
 
@@ -142,7 +142,7 @@ export function Drawer({
             </form>
           ) : (
             <div className="flex flex-1 flex-col overflow-hidden">
-              <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-6 sm:py-5">
+              <div className="grid flex-1 auto-rows-min content-start grid-cols-1 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-6 sm:py-5">
                 {children}
               </div>
               {footer && (
