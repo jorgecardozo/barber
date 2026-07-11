@@ -26,7 +26,7 @@ function StatusSelect({ value, onChange }: { value: AppointmentStatus; onChange:
           <ChevronDown className="size-4 opacity-70" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" style={{ zIndex: 100 }} className="w-[--radix-popover-trigger-width] p-1">
+      <PopoverContent align="start" style={{ zIndex: 100 }} className="w-(--radix-popover-trigger-width) p-1">
         {ESTADOS.map((e) => (
           <button
             key={e.v}

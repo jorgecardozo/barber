@@ -58,7 +58,7 @@ export function TimePicker({
             {value ? `${value} hs` : <span className="text-muted-foreground">{placeholder}</span>}
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" style={{ zIndex: 100 }} className="w-[--radix-popover-trigger-width] p-1">
+        <PopoverContent align="start" style={{ zIndex: 100 }} className="w-(--radix-popover-trigger-width) p-1">
           {/* Entrada libre: cualquier hora (paso 1 min). */}
           <input
             type="time"

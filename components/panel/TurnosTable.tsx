@@ -64,9 +64,9 @@ export const STATUS_TONE: Record<AppointmentStatus, BadgeTone> = {
   hold: "amber",
   confirmada: "cyan",
   en_curso: "cyan",
-  completada: "gray",
-  no_show: "red",
-  cancelada: "gray",
+  completada: "green",
+  no_show: "amber",
+  cancelada: "red",
   expirada: "gray",
 };
 
