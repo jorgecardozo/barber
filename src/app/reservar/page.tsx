@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ClientShell } from "@/components/ClientShell";
 import { BookingWizard } from "@/components/reservar/BookingWizard";
-import { getSessionUser } from "@/lib/auth";
-import { listServices, listBarbers } from "@/lib/store";
+import { getSessionUser } from "@/shared/api/auth";
+import { listServices, listBarbers } from "@/shared/api/store";
 import { depositForPrice } from "@/shared/config/decisions";
-import { horizonDates } from "@/lib/availability";
+import { horizonDates } from "@/shared/api/availability";
 import { fmtDateLong, fmtDateShort } from "@/shared/lib/time";
 
 export const metadata: Metadata = { title: "Reservar turno · Flow Site" };

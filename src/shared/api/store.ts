@@ -11,7 +11,7 @@
 import { supabaseAdmin as sb } from "@/shared/api/supabase/admin";
 import { depositForPrice } from "@/shared/config/decisions";
 import { hhmmToMin, minToHHMM, nowMs } from "@/shared/lib/time";
-import type { Appointment, Barber, Payment, PaymentMethod, Service, User, WorkingHours } from "@/lib/types";
+import type { Appointment, Barber, Payment, PaymentMethod, Service, User, WorkingHours } from "@/shared/model/types";
 
 // estados que "ocupan" agenda (mismo conjunto que el EXCLUDE / slots_publicos + en_curso)
 const OCCUPYING = ["hold", "confirmada", "en_curso", "completada", "no_show"] as const;

@@ -8,8 +8,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
-import { setSucursalAction } from "@/lib/sucursal-actions";
-import type { Sucursal } from "@/lib/sucursal";
+import { setSucursalAction } from "@/shared/api/sucursal-actions";
+import type { Sucursal } from "@/shared/api/sucursal";
 
 // Selector de sucursal activa. Con una sola sucursal se muestra como etiqueta;
 // con varias, como dropdown.

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Drawer, Field, inputClass } from "@/components/panel/Drawer";
 import { BarberActiveToggle } from "@/components/panel/BarberActiveToggle";
 import { Switch } from "@/shared/ui/switch";
-import { createBarberAction, updateBarberAction } from "@/lib/admin-actions";
+import { createBarberAction, updateBarberAction } from "@/shared/api/admin-actions";
 import type { BarberRow } from "@/components/panel/BarbersTable";
 
 type Props = {

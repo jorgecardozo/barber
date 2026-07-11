@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
 import { formatARS } from "@/shared/lib/money";
-import { empezarTurnoAction, noShowTurnoAction, terminarTurnoAction } from "@/lib/actions";
+import { empezarTurnoAction, noShowTurnoAction, terminarTurnoAction } from "@/shared/api/actions";
 
 type QueueItem = {
   id: string;

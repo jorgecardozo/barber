@@ -7,7 +7,7 @@ import { Loader2, Check, CalendarClock, Copy } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Switch } from "@/shared/ui/switch";
-import { setWorkingHoursAction } from "@/lib/admin-actions";
+import { setWorkingHoursAction } from "@/shared/api/admin-actions";
 
 type DayState = { closed: boolean; open: string; close: string; breakStart: string; breakEnd: string };
 type HoursInput = { weekday: number; open: string; close: string; breakStart?: string; breakEnd?: string };

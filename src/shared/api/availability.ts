@@ -5,7 +5,7 @@
  * ya tomados (holds no vencidos + confirmados).
  */
 import { DECISIONS } from "@/shared/config/decisions";
-import { activeAppointmentsForBarber, getService, workingHoursFor, workingHoursForBarber } from "@/lib/store";
+import { activeAppointmentsForBarber, getService, workingHoursFor, workingHoursForBarber } from "@/shared/api/store";
 import { addDays, arDateTime, hhmmToMin, minToHHMM, nowMs, todayAR, weekdayOf } from "@/shared/lib/time";
 
 export interface Slot {

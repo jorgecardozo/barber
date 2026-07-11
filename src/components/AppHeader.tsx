@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { logoutAction } from "@/lib/actions";
-import type { User } from "@/lib/types";
+import { logoutAction } from "@/shared/api/actions";
+import type { User } from "@/shared/model/types";
 
 export function AppHeader({ user }: { user: User | null }) {
   return (

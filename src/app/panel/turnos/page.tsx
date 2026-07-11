@@ -2,10 +2,10 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { TurnosTable, type TurnoRow } from "@/components/panel/TurnosTable";
 import { WalkInDialog } from "@/components/panel/WalkInDialog";
-import { requireStaff } from "@/lib/auth";
-import { expireHolds, listAllAppointments, listBarbers, listServices } from "@/lib/store";
+import { requireStaff } from "@/shared/api/auth";
+import { expireHolds, listAllAppointments, listBarbers, listServices } from "@/shared/api/store";
 import { depositForPrice } from "@/shared/config/decisions";
-import { horizonDates } from "@/lib/availability";
+import { horizonDates } from "@/shared/api/availability";
 import { fmtDateLong, fmtDateShort, fmtTime, todayAR } from "@/shared/lib/time";
 
 export const metadata: Metadata = { title: "Turnos · Panel Flow Site" };

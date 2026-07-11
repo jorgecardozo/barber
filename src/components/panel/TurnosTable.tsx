@@ -25,8 +25,8 @@ import {
   panelSetStatusAction,
   registrarSaldoAction,
   registrarSenaEfectivoAction,
-} from "@/lib/actions";
-import type { AppointmentStatus } from "@/lib/types";
+} from "@/shared/api/actions";
+import type { AppointmentStatus } from "@/shared/model/types";
 
 export type TurnoRow = {
   id: string;

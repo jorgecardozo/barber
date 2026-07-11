@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ClientShell } from "@/components/ClientShell";
 import { AvatarBuilder } from "@/components/perfil/AvatarBuilder";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionUser } from "@/shared/api/auth";
 import { parseAvatarUrl } from "@/shared/lib/avatar";
 
 export const metadata: Metadata = { title: "Mi avatar · Flow Site" };

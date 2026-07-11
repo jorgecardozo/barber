@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { Drawer, Field, inputClass } from "@/components/panel/Drawer";
-import { createServiceAction, updateServiceAction, deleteServiceAction } from "@/lib/admin-actions";
+import { createServiceAction, updateServiceAction, deleteServiceAction } from "@/shared/api/admin-actions";
 import type { ServiceRow } from "@/components/panel/ServicesTable";
 
 type Props = {

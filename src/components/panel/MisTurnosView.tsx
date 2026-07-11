@@ -5,9 +5,9 @@ import { DataTable, type Column } from "@/components/panel/DataTable";
 import { PageHeader } from "@/components/panel/PageHeader";
 import { Panel, Badge } from "@/components/panel/ui";
 import { STATUS_TONE, statusLabel } from "@/components/panel/TurnosTable";
-import { cancelarTurnoAction } from "@/lib/actions";
+import { cancelarTurnoAction } from "@/shared/api/actions";
 import { formatARS } from "@/shared/lib/money";
-import type { AppointmentStatus } from "@/lib/types";
+import type { AppointmentStatus } from "@/shared/model/types";
 
 // Para el cliente, un turno "hold" es un pago pendiente.
 const clientStatusLabel = (s: AppointmentStatus) => (s === "hold" ? "Pago pendiente" : statusLabel(s));

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { AppHeader } from "@/components/AppHeader";
 import { PanelShell, CLIENT_SECTIONS } from "@/components/panel/PanelShell";
-import type { User } from "@/lib/types";
+import type { User } from "@/shared/model/types";
 
 // Shell de las vistas de cliente: si hay sesión, usa la misma sidebar/navbar del
 // panel (CLIENT_SECTIONS). Sin sesión (flujo público), cae al header simple.

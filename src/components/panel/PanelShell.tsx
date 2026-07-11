@@ -18,11 +18,11 @@ import {
   ChevronsLeft,
   Search,
 } from "lucide-react";
-import { logoutAction } from "@/lib/actions";
+import { logoutAction } from "@/shared/api/actions";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { SucursalSwitcher } from "@/components/panel/SucursalSwitcher";
-import type { Sucursal } from "@/lib/sucursal";
-import type { User } from "@/lib/types";
+import type { Sucursal } from "@/shared/api/sucursal";
+import type { User } from "@/shared/model/types";
 
 type NavItem = { href: string; label: string; icon: React.ElementType; adminOnly?: boolean };
 type Section = { title: string; items: NavItem[] };

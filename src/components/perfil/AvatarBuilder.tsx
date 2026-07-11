@@ -6,7 +6,7 @@ import { Shuffle, Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/shared/ui/button";
 import { Card, CardContent } from "@/shared/ui/card";
-import { guardarAvatarAction } from "@/lib/actions";
+import { guardarAvatarAction } from "@/shared/api/actions";
 import { AVATAR_OPTIONS, AVATAR_DEFAULTS, buildAvatarUrl, type AvatarOpts } from "@/shared/lib/avatar";
 
 type Opts = Omit<AvatarOpts, "seed">;

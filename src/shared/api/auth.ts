@@ -4,7 +4,7 @@
  */
 import { createClient } from "@/shared/api/supabase/server";
 import { supabaseAdmin } from "@/shared/api/supabase/admin";
-import type { User } from "@/lib/types";
+import type { User } from "@/shared/model/types";
 
 export async function getSessionUser(): Promise<User | null> {
   const supabase = await createClient();

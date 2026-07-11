@@ -1,4 +1,4 @@
-import type { AppointmentStatus } from "@/lib/types";
+import type { AppointmentStatus } from "@/shared/model/types";
 
 const MAP: Record<AppointmentStatus, { label: string; cls: string }> = {
   hold: { label: "Pago pendiente", cls: "bg-amber-400/15 text-amber-300" },

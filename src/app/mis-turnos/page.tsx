@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { PanelShell, CLIENT_SECTIONS } from "@/components/panel/PanelShell";
 import { MisTurnosView, type MisTurnoRow } from "@/components/panel/MisTurnosView";
-import { getSessionUser } from "@/lib/auth";
-import { appointmentsForCustomer, listBarbers, listServices } from "@/lib/store";
+import { getSessionUser } from "@/shared/api/auth";
+import { appointmentsForCustomer, listBarbers, listServices } from "@/shared/api/store";
 import { DECISIONS } from "@/shared/config/decisions";
 import { fmtDateLong, fmtTime } from "@/shared/lib/time";
 

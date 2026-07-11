@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { ClientShell } from "@/components/ClientShell";
-import { getSessionUser } from "@/lib/auth";
-import { getAppointment, getBarber, getService } from "@/lib/store";
+import { getSessionUser } from "@/shared/api/auth";
+import { getAppointment, getBarber, getService } from "@/shared/api/store";
 import { DECISIONS } from "@/shared/config/decisions";
 import { formatARS } from "@/shared/lib/money";
 import { fmtDateLong, fmtTime } from "@/shared/lib/time";

@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { BarbersTable } from "@/components/panel/BarbersTable";
-import { requireAdmin } from "@/lib/auth";
-import { listBarbers, getUser } from "@/lib/store";
+import { requireAdmin } from "@/shared/api/auth";
+import { listBarbers, getUser } from "@/shared/api/store";
 
 export const metadata: Metadata = { title: "Barberos · Panel Flow Site" };
 export const dynamic = "force-dynamic";

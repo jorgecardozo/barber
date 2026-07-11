@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ServicesTable } from "@/components/panel/ServicesTable";
-import { requireStaff } from "@/lib/auth";
-import { listServices } from "@/lib/store";
+import { requireStaff } from "@/shared/api/auth";
+import { listServices } from "@/shared/api/store";
 
 export const metadata: Metadata = { title: "Servicios · Panel Flow Site" };
 export const dynamic = "force-dynamic";

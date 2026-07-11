@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { requireStaff } from "@/lib/auth";
-import { loginAction } from "@/lib/actions";
+import { requireStaff } from "@/shared/api/auth";
+import { loginAction } from "@/shared/api/actions";
 
 export const metadata: Metadata = { title: "Panel · Ingresar" };
 export const dynamic = "force-dynamic";

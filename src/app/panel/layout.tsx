@@ -1,6 +1,6 @@
-import { requireStaff } from "@/lib/auth";
+import { requireStaff } from "@/shared/api/auth";
 import { PanelShell } from "@/components/panel/PanelShell";
-import { listSucursales, getCurrentSucursalId } from "@/lib/sucursal";
+import { listSucursales, getCurrentSucursalId } from "@/shared/api/sucursal";
 
 // Layout del panel: sidebar (desktop) + drawer (mobile). La página de login
 // (/panel/ingresar) no tiene sesión → se renderiza sin shell.

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { availableSlots, daySlotGrid, horizonAvailability } from "@/lib/availability";
-import { expireHolds } from "@/lib/store";
+import { availableSlots, daySlotGrid, horizonAvailability } from "@/shared/api/availability";
+import { expireHolds } from "@/shared/api/store";
 
 // Lee estado en memoria → nunca cachear.
 export const dynamic = "force-dynamic";

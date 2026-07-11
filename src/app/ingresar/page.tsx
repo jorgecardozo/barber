@@ -6,9 +6,9 @@ import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Separator } from "@/shared/ui/separator";
-import { getSessionUser } from "@/lib/auth";
-import { loginAction, registerAction } from "@/lib/actions";
-import { loginGoogleAction, registerBarberAction } from "@/lib/admin-actions";
+import { getSessionUser } from "@/shared/api/auth";
+import { loginAction, registerAction } from "@/shared/api/actions";
+import { loginGoogleAction, registerBarberAction } from "@/shared/api/admin-actions";
 
 export const metadata: Metadata = { title: "Ingresar · Flow Site" };
 export const dynamic = "force-dynamic";

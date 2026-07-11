@@ -6,7 +6,7 @@ import { DashboardCharts } from "@/components/panel/DashboardCharts";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 import { Button } from "@/shared/ui/button";
-import { requireStaff } from "@/lib/auth";
+import { requireStaff } from "@/shared/api/auth";
 import {
   allUpcomingAppointments,
   expireHolds,
@@ -14,7 +14,7 @@ import {
   listAllAppointments,
   listBarbers,
   listPayments,
-} from "@/lib/store";
+} from "@/shared/api/store";
 import { formatARS } from "@/shared/lib/money";
 import { addDays, fmtDateLong, fmtDateShort, todayAR } from "@/shared/lib/time";
 

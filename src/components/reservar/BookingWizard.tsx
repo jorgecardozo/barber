@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { formatARS } from "@/shared/lib/money";
-import { crearReservaAction } from "@/lib/actions";
+import { crearReservaAction } from "@/shared/api/actions";
 
 type Service = {
   id: string;

@@ -2,9 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ClientShell } from "@/components/ClientShell";
-import { getSessionUser } from "@/lib/auth";
-import { getAppointment, getBarber, getService } from "@/lib/store";
-import { pagarSeniaAction } from "@/lib/actions";
+import { getSessionUser } from "@/shared/api/auth";
+import { getAppointment, getBarber, getService } from "@/shared/api/store";
+import { pagarSeniaAction } from "@/shared/api/actions";
 import { formatARS } from "@/shared/lib/money";
 import { fmtDateLong, fmtTime } from "@/shared/lib/time";
 

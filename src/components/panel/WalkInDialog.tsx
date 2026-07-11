@@ -11,7 +11,7 @@ import { Drawer, Field, inputClass } from "@/components/panel/Drawer";
 import { DatePicker } from "@/shared/ui/date-picker";
 import { TimePicker } from "@/shared/ui/time-picker";
 import { formatARS } from "@/shared/lib/money";
-import { crearTurnoWalkInAction } from "@/lib/admin-actions";
+import { crearTurnoWalkInAction } from "@/shared/api/admin-actions";
 
 type Service = { id: string; name: string; priceCents: number; durationMin: number; depositCents: number };
 type Barber = { id: string; name: string; serviceIds: string[] };

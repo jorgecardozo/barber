@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { HorariosEditor } from "@/components/panel/HorariosEditor";
-import { requireStaff } from "@/lib/auth";
-import { getBarber, getBarberByUserId, listBarbers, workingHoursForBarber } from "@/lib/store";
+import { requireStaff } from "@/shared/api/auth";
+import { getBarber, getBarberByUserId, listBarbers, workingHoursForBarber } from "@/shared/api/store";
 
 export const metadata: Metadata = { title: "Horarios · Panel Flow Site" };
 export const dynamic = "force-dynamic";

@@ -12,7 +12,7 @@ import { Button } from "@/shared/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { Badge } from "@/components/panel/ui";
 import { METODO, ESTADOS, STATUS_TONE, statusLabel, PayHint, type TurnoRow } from "@/components/panel/TurnosTable";
-import type { AppointmentStatus } from "@/lib/types";
+import type { AppointmentStatus } from "@/shared/model/types";
 
 // Selector de estado con badges de color (el <select> nativo no colorea las
 // opciones). Popover por encima del drawer, igual que los pickers de fecha/hora.
@@ -46,7 +46,7 @@ import {
   registrarSaldoAction,
   registrarSenaEfectivoAction,
   updateTurnoAction,
-} from "@/lib/actions";
+} from "@/shared/api/actions";
 
 function Info({ label, children }: { label: string; children: React.ReactNode }) {
   return (

@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Switch } from "@/shared/ui/switch";
-import { setBarberActiveAction } from "@/lib/admin-actions";
+import { setBarberActiveAction } from "@/shared/api/admin-actions";
 
 export function BarberActiveToggle({ id, active }: { id: string; active: boolean }) {
   const router = useRouter();
