@@ -12,14 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { DataTable, type Column } from "@/components/panel/DataTable";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -166,8 +159,61 @@ export function TurnosTable({
     });
   }
 
+  const columns: Column<TurnoRow>[] = [
+    {
+      key: "fecha",
+      label: "Fecha",
+      render: (r) => (
+        <div>
+          <span className="text-foreground">{r.dateLabel}</span>
+          <span className="block text-xs text-muted-foreground">{r.time} hs</span>
+        </div>
+      ),
+    },
+    {
+      key: "cliente",
+      label: "Cliente",
+      truncate: true,
+      render: (r) => (
+        <div>
+          <span className="text-foreground">{r.customerName}</span>
+          <span className="block text-xs text-muted-foreground">{r.customerPhone}</span>
+        </div>
+      ),
+    },
+    { key: "barbero", label: "Barbero", render: (r) => <span className="text-muted-foreground">{r.barberName}</span> },
+    { key: "servicio", label: "Servicio", truncate: true, render: (r) => <span className="text-muted-foreground">{r.serviceName}</span> },
+    {
+      key: "sena",
+      label: "Seña",
+      render: (r) => (
+        <div>
+          <span className="text-foreground">{formatARS(r.depositCents)}</span>
+          <PayHint status={r.depositStatus} method={r.depositMethod} />
+        </div>
+      ),
+    },
+    {
+      key: "saldo",
+      label: "Saldo",
+      render: (r) => (
+        <div>
+          <span className="text-foreground">{formatARS(r.balanceCents)}</span>
+          <PayHint status={r.balanceStatus} method={r.balanceMethod} />
+        </div>
+      ),
+    },
+    { key: "estado", label: "Estado", render: (r) => <Badge variant="outline" className={BADGE[r.status]}>{statusLabel(r.status)}</Badge> },
+    {
+      key: "acciones",
+      label: "Acciones",
+      align: "right",
+      render: (r) => <RowActions row={r} run={run} disabled={pending} />,
+    },
+  ];
+
   return (
-    <div>
+    <div className="flex min-h-0 flex-1 flex-col">
       {/* ============ FILTROS (una sola línea: buscador + Filtros ícono) ============ */}
       <div className="mb-3">
         <div className="flex items-center gap-2">
@@ -273,98 +319,14 @@ export function TurnosTable({
         {pending && <Loader2 className="size-3 animate-spin" />}
       </p>
 
-      {/* Tabla (desktop) */}
-      <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-lg shadow-black/30 md:block">
-        <Table className="min-w-[760px]">
-          <TableHeader className="[&_th]:text-xs [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wider [&_th]:text-muted-foreground">
-            <TableRow className="border-b border-border bg-secondary/60 hover:bg-secondary/60">
-              <TableHead>Fecha</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Barbero</TableHead>
-              <TableHead>Servicio</TableHead>
-              <TableHead>Seña</TableHead>
-              <TableHead>Saldo</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="text-right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paged.map((r, i) => (
-              <TableRow key={r.id} className={i % 2 === 1 ? "bg-foreground/[0.025]" : undefined}>
-                <TableCell className="whitespace-nowrap">
-                  <span className="text-foreground">{r.dateLabel}</span>
-                  <span className="block text-xs text-muted-foreground">{r.time} hs</span>
-                </TableCell>
-                <TableCell>
-                  <span className="text-foreground">{r.customerName}</span>
-                  <span className="block text-xs text-muted-foreground">{r.customerPhone}</span>
-                </TableCell>
-                <TableCell className="text-muted-foreground">{r.barberName}</TableCell>
-                <TableCell className="text-muted-foreground">{r.serviceName}</TableCell>
-                <TableCell>
-                  <span className="text-foreground">{formatARS(r.depositCents)}</span>
-                  <PayHint status={r.depositStatus} method={r.depositMethod} />
-                </TableCell>
-                <TableCell>
-                  <span className="text-foreground">{formatARS(r.balanceCents)}</span>
-                  <PayHint status={r.balanceStatus} method={r.balanceMethod} />
-                </TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={BADGE[r.status]}>{statusLabel(r.status)}</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <RowActions row={r} run={run} disabled={pending} />
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
-              <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
-                  No hay turnos con esos filtros.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Tarjetas (mobile) */}
-      <div className="space-y-2 md:hidden">
-        {paged.map((r) => (
-          <div key={r.id} className="rounded-xl border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-medium text-foreground">{r.customerName}</p>
-                <p className="text-xs text-muted-foreground">{r.customerPhone}</p>
-              </div>
-              <Badge variant="outline" className={BADGE[r.status]}>{statusLabel(r.status)}</Badge>
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-              <span className="text-foreground">{r.dateLabel} · {r.time}</span>
-              <span>{r.barberName}</span>
-              <span>{r.serviceName}</span>
-            </div>
-            <div className="mt-3 flex items-end justify-between gap-2">
-              <div className="grid grid-cols-2 gap-x-4 text-sm">
-                <div>
-                  <span className="text-xs text-muted-foreground">Seña</span>
-                  <p className="text-foreground">{formatARS(r.depositCents)}</p>
-                  <PayHint status={r.depositStatus} method={r.depositMethod} />
-                </div>
-                <div>
-                  <span className="text-xs text-muted-foreground">Saldo</span>
-                  <p className="text-foreground">{formatARS(r.balanceCents)}</p>
-                  <PayHint status={r.balanceStatus} method={r.balanceMethod} />
-                </div>
-              </div>
-              <RowActions row={r} run={run} disabled={pending} />
-            </div>
-          </div>
-        ))}
-        {filtered.length === 0 && (
-          <p className="rounded-xl border border-border bg-card px-4 py-10 text-center text-muted-foreground">No hay turnos con esos filtros.</p>
-        )}
-      </div>
+      {/* Tabla compacta (kampo-style): scroll interno + header sticky, misma vista en desktop y mobile */}
+      <DataTable
+        columns={columns}
+        rows={paged}
+        rowKey={(r) => r.id}
+        minWidth="820px"
+        emptyLabel="No hay turnos con esos filtros."
+      />
 
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between text-sm">

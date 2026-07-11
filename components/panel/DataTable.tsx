@@ -56,9 +56,12 @@ export function DataTable<T>({
     return rows.filter((r) => matchesSearch(r, s));
   }, [rows, q, matchesSearch]);
 
+  const showToolbar = !!(matchesSearch || filters || toolbarRight);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {/* Toolbar: buscador + acciones + Filtros (ícono) — todo en una línea */}
+      {showToolbar && (
       <div className="mb-3 flex items-center gap-2">
         {matchesSearch && (
           <div className="relative min-w-0 flex-1">
@@ -94,6 +97,7 @@ export function DataTable<T>({
           </Popover>
         )}
       </div>
+      )}
 
       {/* Tabla: scroll interno + header sticky */}
       <div

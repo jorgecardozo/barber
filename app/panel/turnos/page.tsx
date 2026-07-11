@@ -66,8 +66,8 @@ export default async function TurnosPage() {
 
   return (
     <>
-      <main className="mx-auto w-full max-w-6xl min-w-0 flex-1 overflow-x-clip px-6 py-10 lg:px-8">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+      <main className="mx-auto flex min-h-0 w-full max-w-6xl min-w-0 flex-1 flex-col overflow-x-clip px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-6 flex shrink-0 flex-wrap items-end justify-between gap-3">
           <div>
             <h1 className="mb-1 font-display text-3xl">Turnos</h1>
             <p className="text-sm text-muted-foreground">Filtrá, buscá y registrá pagos.</p>
