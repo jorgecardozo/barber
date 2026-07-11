@@ -13,6 +13,7 @@ import {
   setAppointmentStatus,
   setUserAvatar,
   SlotTakenError,
+  updateAppointmentCustomer,
   updateBarber,
 } from "./store";
 import { getSessionUser, requireStaff } from "./auth";
@@ -146,6 +147,24 @@ export async function panelSetStatusAction(formData: FormData) {
   revalidatePath("/panel");
   revalidatePath("/panel/turnos");
   revalidatePath("/panel/cola");
+}
+
+/** Edita los datos del cliente del turno (nombre / teléfono / notas). */
+export async function updateTurnoAction(formData: FormData) {
+  const staff = await requireStaff();
+  if (!staff) redirect("/panel/ingresar");
+  const id = String(formData.get("id") || "");
+  const appt = await getAppointment(id);
+  if (!appt) redirect("/panel/turnos");
+  // Barbero solo edita sus propios turnos.
+  if (staff.role === "barbero" && appt.barberId !== staff.barberId) redirect("/panel");
+  await updateAppointmentCustomer(id, {
+    customerName: String(formData.get("customerName") || "").trim() || appt.customerName,
+    customerPhone: String(formData.get("customerPhone") || "").trim(),
+    notes: String(formData.get("notes") || "").trim() || undefined,
+  });
+  revalidatePath("/panel/turnos");
+  revalidatePath("/panel");
 }
 
 /** Cola: sentar al cliente en el sillón (en curso). */

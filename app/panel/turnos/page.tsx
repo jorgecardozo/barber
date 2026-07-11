@@ -32,6 +32,7 @@ export default async function TurnosPage() {
       time: fmtTime(new Date(a.start)),
       customerName: a.customerName,
       customerPhone: a.customerPhone,
+      notes: a.customerNotes,
       barberId: a.barberId,
       barberName: barbName.get(a.barberId) ?? a.barberId,
       serviceName: svcName.get(a.serviceId) ?? a.serviceId,

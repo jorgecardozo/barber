@@ -36,6 +36,7 @@ export type TurnoRow = {
   time: string;
   customerName: string;
   customerPhone: string;
+  notes: string;
   barberId: string;
   barberName: string;
   serviceName: string;

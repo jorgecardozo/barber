@@ -54,6 +54,7 @@ export interface Appointment {
   customerId: string | null;
   customerName: string;
   customerPhone: string;
+  customerNotes: string;
   start: string; // ISO con offset -03:00
   end: string; // ISO con offset -03:00
   status: AppointmentStatus;

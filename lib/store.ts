@@ -58,6 +58,7 @@ function mapAppt(r: Row): Appointment {
     customerId: (r.customer_id as string) ?? null,
     customerName: (r.customer_name_snapshot as string) || prof?.full_name || "Cliente",
     customerPhone: (r.customer_phone_snapshot as string) || prof?.phone || "",
+    customerNotes: (r.customer_notes as string) ?? "",
     start: r.starts_at as string,
     end: r.ends_at as string,
     status,
@@ -73,7 +74,7 @@ function mapAppt(r: Row): Appointment {
 }
 
 const APPT_SEL =
-  "id,service_id,barber_id,customer_id,customer_name_snapshot,customer_phone_snapshot,starts_at,ends_at,status,price_cents,deposit_cents,hold_expires_at,created_at,profiles:customer_id(full_name,phone),payments(kind,method,status)";
+  "id,service_id,barber_id,customer_id,customer_name_snapshot,customer_phone_snapshot,customer_notes,starts_at,ends_at,status,price_cents,deposit_cents,hold_expires_at,created_at,profiles:customer_id(full_name,phone),payments(kind,method,status)";
 const BARBER_SEL = "id,name,role_label,specialty,img_url,is_active,profile_id,sort_order,barber_services(service_id)";
 const SERVICE_SEL = "id,name,description,price_cents,duration_min,deposit_pct,is_featured,is_active,sort_order,slug";
 
@@ -393,6 +394,23 @@ export async function cancelAppointment(id: string): Promise<Appointment> {
 }
 export async function setAppointmentStatus(id: string, status: Appointment["status"]): Promise<Appointment> {
   await sb.from("appointments").update({ status }).eq("id", id);
+  return (await getAppointment(id))!;
+}
+
+// Edita los datos del cliente del turno (snapshot) + notas. No toca
+// barbero/servicio/horario (eso lo gobierna la reserva y el anti-solape).
+export async function updateAppointmentCustomer(
+  id: string,
+  input: { customerName: string; customerPhone: string; notes?: string },
+): Promise<Appointment> {
+  await sb
+    .from("appointments")
+    .update({
+      customer_name_snapshot: input.customerName,
+      customer_phone_snapshot: input.customerPhone,
+      customer_notes: input.notes ?? null,
+    })
+    .eq("id", id);
   return (await getAppointment(id))!;
 }
 
