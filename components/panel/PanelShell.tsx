@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
@@ -14,7 +14,9 @@ import {
   ListOrdered,
   Menu,
   X,
+  ChevronDown,
   ChevronsLeft,
+  Search,
 } from "lucide-react";
 import { logoutAction } from "@/lib/actions";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -23,18 +25,38 @@ import type { Sucursal } from "@/lib/sucursal";
 import type { User } from "@/lib/types";
 
 type NavItem = { href: string; label: string; icon: React.ElementType; adminOnly?: boolean };
+type Section = { title: string; items: NavItem[] };
 
-const NAV: NavItem[] = [
-  { href: "/panel", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/panel/cola", label: "Cola", icon: ListOrdered },
-  { href: "/panel/turnos", label: "Turnos", icon: CalendarDays },
-  { href: "/panel/servicios", label: "Servicios", icon: Scissors },
-  { href: "/panel/barberos", label: "Barberos", icon: Users, adminOnly: true },
-  { href: "/panel/horarios", label: "Horarios", icon: Clock },
+// Igual que kampo: ítems agrupados en secciones con cabecera + acordeón.
+const SECTIONS: Section[] = [
+  { title: "INICIO", items: [{ href: "/panel", label: "Dashboard", icon: LayoutDashboard }] },
+  {
+    title: "ATENCIÓN",
+    items: [
+      { href: "/panel/cola", label: "Cola", icon: ListOrdered },
+      { href: "/panel/turnos", label: "Turnos", icon: CalendarDays },
+    ],
+  },
+  {
+    title: "CONFIGURACIÓN",
+    items: [
+      { href: "/panel/servicios", label: "Servicios", icon: Scissors },
+      { href: "/panel/barberos", label: "Barberos", icon: Users, adminOnly: true },
+      { href: "/panel/horarios", label: "Horarios", icon: Clock },
+    ],
+  },
 ];
 
 const isActive = (pathname: string, href: string) =>
   href === "/panel" ? pathname === "/panel" : pathname.startsWith(href);
+
+function filterSections(sections: Section[], q: string): Section[] {
+  const s = q.trim().toLowerCase();
+  if (!s) return sections;
+  return sections
+    .map((sec) => ({ ...sec, items: sec.items.filter((it) => it.label.toLowerCase().includes(s)) }))
+    .filter((sec) => sec.items.length > 0);
+}
 
 function Avatar({ user, size = 32 }: { user: User; size?: number }) {
   const [err, setErr] = useState(false);
@@ -61,113 +83,186 @@ function Avatar({ user, size = 32 }: { user: User; size?: number }) {
   );
 }
 
-// ---------- Sidebar desktop (se expande al hover) ----------
+// ---------- Sidebar desktop (colapsable con toggle, como kampo) ----------
 function DesktopSidebar({
   user,
-  items,
+  sections,
   sucursales,
   currentSucursalId,
 }: {
   user: User;
-  items: NavItem[];
+  sections: Section[];
   sucursales: Sucursal[];
   currentSucursalId: string | null;
 }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
+  const [query, setQuery] = useState("");
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const saved = localStorage.getItem("panelSidebarOpen");
+    if (saved != null) setOpen(saved === "true");
+  }, []);
+  const toggleOpen = () =>
+    setOpen((v) => {
+      const nv = !v;
+      try { localStorage.setItem("panelSidebarOpen", String(nv)); } catch {}
+      return nv;
+    });
+
+  const activeSection = sections.find((s) => s.items.some((it) => isActive(pathname, it.href)))?.title;
+  const isSectionOpen = (title: string) =>
+    !open ? true : query ? true : title in openSections ? openSections[title] : title === activeSection;
+  const toggleSection = (title: string) =>
+    setOpenSections((p) => ({ ...p, [title]: !(title in p ? p[title] : title === activeSection) }));
+
+  const visible = useMemo(() => filterSections(sections, query), [sections, query]);
+
   return (
-    <div
-      className="fixed inset-y-0 left-0 z-50 hidden md:block"
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+    <aside
+      className={`relative hidden h-full shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl transition-[width] duration-300 md:flex ${
+        open ? "w-60" : "w-[76px]"
+      }`}
     >
-      <div
-        className={`flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl transition-all duration-300 ${
-          open ? "w-60" : "w-[68px]"
-        }`}
+      {/* Toggle circular sobre el borde (como kampo) */}
+      <button
+        type="button"
+        onClick={toggleOpen}
+        title={open ? "Colapsar menú" : "Expandir menú"}
+        className="absolute -right-3 top-8 z-10 flex h-6 w-6 items-center justify-center rounded-full border-2 border-primary bg-primary text-primary-foreground shadow-md"
       >
-        <Link href="/panel" className="flex h-14 items-center gap-2 overflow-hidden px-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
-            F
-          </span>
-          {open && <span className="chrome-text font-display text-lg italic tracking-wide">FLOW</span>}
-        </Link>
+        <ChevronsLeft className={`h-3.5 w-3.5 transition-transform duration-300 ${open ? "" : "rotate-180"}`} />
+      </button>
 
-        {open && sucursales.length > 0 && (
-          <div className="px-2 pb-2">
-            <SucursalSwitcher sucursales={sucursales} currentId={currentSucursalId} />
-          </div>
-        )}
+      {/* Logo */}
+      <Link href="/panel" className="flex h-14 shrink-0 items-center gap-2 overflow-hidden px-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-lg font-bold text-primary-foreground">
+          F
+        </span>
+        {open && <span className="chrome-text font-display text-lg italic tracking-wide">FLOW</span>}
+      </Link>
 
-        <nav className="mt-1 flex-1 space-y-1 px-2">
-          {items.map((n) => {
-            const Icon = n.icon;
-            const on = isActive(pathname, n.href);
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                title={n.label}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  on
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                {open && <span className="truncate">{n.label}</span>}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="border-t border-sidebar-border p-2 space-y-1">
-          <div className={`flex items-center gap-2 px-1 py-1 ${open ? "" : "justify-center"}`}>
-            <Avatar user={user} />
-            {open && (
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">{user.name}</p>
-                <p className="truncate text-xs text-flow-cyan">{user.role}</p>
-              </div>
-            )}
+      {/* Buscador (solo abierta) */}
+      {open && (
+        <div className="px-3 pb-2">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar menú…"
+              className="w-full rounded-lg border border-border bg-background/60 py-1.5 pl-8 pr-3 text-xs text-foreground placeholder-muted-foreground outline-none focus:ring-2 focus:ring-ring"
+            />
           </div>
-          <div className={`flex items-center gap-2 ${open ? "justify-between px-2" : "justify-center"}`}>
-            {open && <span className="text-sm text-muted-foreground">Tema</span>}
-            <ThemeToggle />
-          </div>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className={`flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive ${
-                open ? "" : "justify-center"
-              }`}
-            >
-              <LogOut className="h-4 w-4 shrink-0" />
-              {open && <span>Cerrar sesión</span>}
-            </button>
-          </form>
         </div>
+      )}
+
+      {open && sucursales.length > 0 && (
+        <div className="px-3 pb-2">
+          <SucursalSwitcher sucursales={sucursales} currentId={currentSucursalId} />
+        </div>
+      )}
+
+      {/* Secciones + ítems */}
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 py-1 [scrollbar-width:thin]">
+        {visible.map((section, i) => {
+          const secOpen = isSectionOpen(section.title);
+          return (
+            <div key={section.title}>
+              {open && (
+                <button
+                  type="button"
+                  onClick={() => toggleSection(section.title)}
+                  className="mb-0.5 mt-2 flex w-full items-center justify-between rounded-md px-2 py-1.5 hover:bg-accent"
+                >
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    {section.title}
+                  </span>
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 text-muted-foreground transition-transform duration-200 ${secOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+              )}
+              {secOpen && (
+                <ul className="space-y-0.5">
+                  {section.items.map((n) => {
+                    const Icon = n.icon;
+                    const on = isActive(pathname, n.href);
+                    return (
+                      <li key={n.href}>
+                        <Link
+                          href={n.href}
+                          title={n.label}
+                          className={`flex items-center gap-x-3 rounded-md p-2 text-sm font-medium transition-colors ${
+                            open ? "" : "justify-center"
+                          } ${
+                            on
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                          }`}
+                        >
+                          <Icon className="h-[18px] w-[18px] shrink-0" />
+                          {open && <span className="truncate">{n.label}</span>}
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              {i < visible.length - 1 && open && <div className="my-2 h-px bg-sidebar-border" />}
+            </div>
+          );
+        })}
+      </nav>
+
+      {/* Usuario + tema + logout */}
+      <div className="shrink-0 space-y-1 border-t border-sidebar-border p-2">
+        <div className={`flex items-center gap-2 px-1 py-1 ${open ? "" : "justify-center"}`}>
+          <Avatar user={user} size={30} />
+          {open && (
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-foreground">{user.name}</p>
+              <p className="truncate text-xs text-flow-cyan">{user.role}</p>
+            </div>
+          )}
+        </div>
+        <div className={`flex items-center gap-2 ${open ? "justify-between px-2" : "justify-center"}`}>
+          {open && <span className="text-sm text-muted-foreground">Tema</span>}
+          <ThemeToggle />
+        </div>
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            title="Cerrar sesión"
+            className={`flex w-full items-center gap-x-3 rounded-md p-2 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive ${
+              open ? "" : "justify-center"
+            }`}
+          >
+            <LogOut className="h-[18px] w-[18px] shrink-0" />
+            {open && <span>Cerrar sesión</span>}
+          </button>
+        </form>
       </div>
-    </div>
+    </aside>
   );
 }
 
 // ---------- Navbar + drawer mobile (arrastrable) ----------
 function MobileNav({
   user,
-  items,
+  sections,
   sucursales,
   currentSucursalId,
 }: {
   user: User;
-  items: NavItem[];
+  sections: Section[];
   sucursales: Sucursal[];
   currentSucursalId: string | null;
 }) {
   const pathname = usePathname();
   const [openMenu, setOpenMenu] = useState(false);
 
-  // Resize por gesto (arrastrar a la izquierda angosta; muy angosto = cierra).
   const sideRef = useRef<HTMLDivElement | null>(null);
   const gesture = useRef<{ x: number; y: number; w: number; mode: string | null; id: number }>({
     x: 0, y: 0, w: 0, mode: null, id: 0,
@@ -251,7 +346,7 @@ function MobileNav({
                 resizing ? "" : "transition-[width] duration-200"
               }`}
             >
-              <div className="flex h-14 items-center justify-between px-4">
+              <div className="flex h-14 shrink-0 items-center justify-between px-4">
                 <span className="chrome-text font-display text-xl italic">FLOW SITE</span>
                 <button onClick={() => setOpenMenu(false)} className="rounded-full bg-primary p-2 text-primary-foreground">
                   <X className="h-5 w-5" />
@@ -264,33 +359,43 @@ function MobileNav({
                 </div>
               )}
 
-              <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4">
-                {items.map((n) => {
-                  const Icon = n.icon;
-                  const on = isActive(pathname, n.href);
-                  return (
-                    <Link
-                      key={n.href}
-                      href={n.href}
-                      onClick={() => setOpenMenu(false)}
-                      className={`flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium ${
-                        on ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                      }`}
-                    >
-                      <Icon className="h-5 w-5 shrink-0" /> {n.label}
-                    </Link>
-                  );
-                })}
+              <nav className="flex-1 overflow-y-auto px-3 pb-4">
+                {sections.map((section) => (
+                  <div key={section.title}>
+                    <p className="mb-0.5 mt-3 px-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {section.title}
+                    </p>
+                    <ul className="space-y-0.5">
+                      {section.items.map((n) => {
+                        const Icon = n.icon;
+                        const on = isActive(pathname, n.href);
+                        return (
+                          <li key={n.href}>
+                            <Link
+                              href={n.href}
+                              onClick={() => setOpenMenu(false)}
+                              className={`flex items-center gap-x-3 rounded-md p-2.5 text-sm font-medium ${
+                                on ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                              }`}
+                            >
+                              <Icon className="h-[18px] w-[18px] shrink-0" /> {n.label}
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
               </nav>
 
-              <div className="shrink-0 border-t border-sidebar-border px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] space-y-2">
+              <div className="shrink-0 space-y-2 border-t border-sidebar-border px-4 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Tema</span>
                   <ThemeToggle />
                 </div>
                 <form action={logoutAction}>
-                  <button type="submit" className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
-                    <LogOut className="h-4 w-4" /> Cerrar sesión
+                  <button type="submit" className="flex w-full items-center gap-2 rounded-md p-2 text-sm font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
+                    <LogOut className="h-[18px] w-[18px]" /> Cerrar sesión
                   </button>
                 </form>
               </div>
@@ -313,13 +418,19 @@ export function PanelShell({
   sucursales?: Sucursal[];
   currentSucursalId?: string | null;
 }) {
-  const items = NAV.filter((n) => !n.adminOnly || user.role === "admin");
+  const sections = SECTIONS.map((s) => ({
+    ...s,
+    items: s.items.filter((n) => !n.adminOnly || user.role === "admin"),
+  })).filter((s) => s.items.length > 0);
+
   return (
-    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-background">
-      <MobileNav user={user} items={items} sucursales={sucursales} currentSucursalId={currentSucursalId} />
-      <DesktopSidebar user={user} items={items} sucursales={sucursales} currentSucursalId={currentSucursalId} />
-      <div className="flex w-full flex-1 flex-col overflow-y-auto pt-14 md:pt-0 md:pl-[68px]">
-        {children}
+    <div className="flex h-[100dvh] overflow-hidden bg-background">
+      <DesktopSidebar user={user} sections={sections} sucursales={sucursales} currentSucursalId={currentSucursalId} />
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <MobileNav user={user} sections={sections} sucursales={sucursales} currentSucursalId={currentSucursalId} />
+        <div className="flex w-full flex-1 flex-col overflow-y-auto pt-14 md:pt-0">
+          {children}
+        </div>
       </div>
     </div>
   );
