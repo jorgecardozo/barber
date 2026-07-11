@@ -11,6 +11,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { DataTable, ColumnsToggle, useColumnVisibility, type Column } from "@/components/panel/DataTable";
 import { PageHeader } from "@/components/panel/PageHeader";
 import { Badge, FiltersBar, FilterField, FilterSelect, Pagination, InfiniteFooter, Panel, ModeToggle, type BadgeTone, type ListMode } from "@/components/panel/ui";
+import { TurnoDetailDrawer } from "@/components/panel/TurnoDetailDrawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,8 +49,8 @@ export type TurnoRow = {
   status: AppointmentStatus;
 };
 
-const METODO: Record<string, string> = { mercadopago: "MercadoPago", efectivo: "Efectivo" };
-const ESTADOS: { v: AppointmentStatus; l: string }[] = [
+export const METODO: Record<string, string> = { mercadopago: "MercadoPago", efectivo: "Efectivo" };
+export const ESTADOS: { v: AppointmentStatus; l: string }[] = [
   { v: "confirmada", l: "Confirmado" },
   { v: "en_curso", l: "En el sillón" },
   { v: "completada", l: "Completado" },
@@ -57,7 +58,7 @@ const ESTADOS: { v: AppointmentStatus; l: string }[] = [
   { v: "cancelada", l: "Cancelado" },
 ];
 
-const STATUS_TONE: Record<AppointmentStatus, BadgeTone> = {
+export const STATUS_TONE: Record<AppointmentStatus, BadgeTone> = {
   hold: "amber",
   confirmada: "cyan",
   en_curso: "cyan",
@@ -87,6 +88,8 @@ export function TurnosTable({
   const [date, setDate] = useState<Date | undefined>(new Date(today + "T12:00:00"));
   const [mode, setMode] = useState<ListMode>("paged");
   const { isVisible, toggle } = useColumnVisibility();
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selected, setSelected] = useState<TurnoRow | null>(null);
 
   const dateKey = date ? format(date, "yyyy-MM-dd") : null;
   const isTodayKey = dateKey === today;
@@ -209,7 +212,11 @@ export function TurnosTable({
       label: "Acciones",
       align: "right",
       hideable: false,
-      render: (r) => <RowActions row={r} run={run} disabled={pending} />,
+      render: (r) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <RowActions row={r} run={run} disabled={pending} />
+        </div>
+      ),
     },
   ];
 
@@ -268,6 +275,8 @@ export function TurnosTable({
           rowKey={(r) => r.id}
           isVisible={isVisible}
           minWidth="820px"
+          onRowClick={(r) => { setSelected(r); setDetailOpen(true); }}
+          selectedKey={detailOpen ? selected?.id : null}
           emptyIcon="📅"
           emptyLabel="No hay turnos con esos filtros."
           emptyDescription="Cambiá los filtros o registrá un turno nuevo."
@@ -280,15 +289,23 @@ export function TurnosTable({
           <InfiniteFooter shown={Math.min(visible, filtered.length)} total={filtered.length} hasNext={hasNext} />
         )}
       </Panel>
+
+      <TurnoDetailDrawer
+        open={detailOpen}
+        initial={selected}
+        items={filtered}
+        onNavigate={setSelected}
+        onClose={() => setDetailOpen(false)}
+      />
     </div>
   );
 }
 
-function statusLabel(s: AppointmentStatus): string {
+export function statusLabel(s: AppointmentStatus): string {
   return ESTADOS.find((e) => e.v === s)?.l ?? s;
 }
 
-function PayHint({ status, method }: { status: "pendiente" | "pagado"; method: string | null }) {
+export function PayHint({ status, method }: { status: "pendiente" | "pagado"; method: string | null }) {
   return (
     <span className={`block text-[11px] ${status === "pagado" ? "text-flow-cyan" : "text-amber-300/80"}`}>
       {status === "pagado" ? `✓ ${method ? METODO[method] : ""}` : `pendiente${method ? " · " + METODO[method] : ""}`}

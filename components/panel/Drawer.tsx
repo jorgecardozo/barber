@@ -9,7 +9,9 @@ type DrawerProps = {
   title: string;
   subtitle?: string;
   onClose: () => void;
-  onSubmit: (fd: FormData) => void;
+  // Con onSubmit → drawer de formulario (footer Cancelar/Guardar). Sin onSubmit
+  // → drawer de detalle (usá `footer` para las acciones).
+  onSubmit?: (fd: FormData) => void;
   submitLabel?: string;
   children: ReactNode;
   submitting?: boolean;
@@ -19,9 +21,11 @@ type DrawerProps = {
   canPrev?: boolean;
   canNext?: boolean;
   navLabel?: string;
-  // Acciones extra a la izquierda del footer.
+  // Acciones extra a la izquierda del footer (modo form).
   secondaryActions?: ReactNode;
-  // key para forzar remonte del form al navegar (resetea inputs no controlados).
+  // Footer custom (modo detalle). Reemplaza el footer Cancelar/Guardar.
+  footer?: ReactNode;
+  // key para forzar remonte al navegar (resetea inputs no controlados).
   formKey?: string;
 };
 
@@ -45,6 +49,7 @@ export function Drawer({
   canNext = false,
   navLabel,
   secondaryActions,
+  footer,
   formKey,
 }: DrawerProps) {
   const showNav = !!(onPrev || onNext);
@@ -100,40 +105,51 @@ export function Drawer({
             </button>
           </div>
 
-          {/* Cuerpo en 2 columnas */}
-          <form
-            key={formKey}
-            onSubmit={(e) => {
-              e.preventDefault();
-              onSubmit(new FormData(e.currentTarget));
-            }}
-            className="flex flex-1 flex-col overflow-hidden"
-          >
-            <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-6 sm:py-5">
-              {children}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3 sm:px-6 sm:py-4">
-              <div className="flex items-center gap-2">{secondaryActions}</div>
-              <div className="ml-auto flex items-center gap-2 sm:gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
-                >
-                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {submitting ? "Guardando…" : submitLabel}
-                </button>
+          {/* Cuerpo en 2 columnas. Con onSubmit → <form>; sin él → detalle. */}
+          {onSubmit ? (
+            <form
+              key={formKey}
+              onSubmit={(e) => {
+                e.preventDefault();
+                onSubmit(new FormData(e.currentTarget));
+              }}
+              className="flex flex-1 flex-col overflow-hidden"
+            >
+              <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-6 sm:py-5">
+                {children}
               </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-3 sm:px-6 sm:py-4">
+                <div className="flex items-center gap-2">{secondaryActions}</div>
+                <div className="ml-auto flex items-center gap-2 sm:gap-3">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                  >
+                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {submitting ? "Guardando…" : submitLabel}
+                  </button>
+                </div>
+              </div>
+            </form>
+          ) : (
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <div className="grid flex-1 grid-cols-1 gap-4 overflow-y-auto px-4 py-4 sm:grid-cols-2 sm:px-6 sm:py-5">
+                {children}
+              </div>
+              {footer && (
+                <div className="border-t border-border px-4 py-3 sm:px-6 sm:py-4">{footer}</div>
+              )}
             </div>
-          </form>
+          )}
         </motion.div>
       )}
     </AnimatePresence>
