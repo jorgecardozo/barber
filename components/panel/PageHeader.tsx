@@ -22,7 +22,7 @@ export function PageHeader({
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           </>
         )}
-        <span className="truncate font-display text-xl text-foreground sm:text-2xl">{title}</span>
+        <span className="truncate font-medium text-foreground">{title}</span>
       </div>
       {actions && <div className="flex flex-wrap items-center justify-end gap-2">{actions}</div>}
     </div>
