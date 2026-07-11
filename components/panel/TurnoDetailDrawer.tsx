@@ -1,11 +1,13 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { format } from "date-fns";
 import { Check, X, CircleDollarSign, Ban } from "lucide-react";
 import { Drawer, Field, inputClass } from "@/components/panel/Drawer";
 import { Badge } from "@/components/panel/ui";
+import { DatePicker } from "@/components/ui/date-picker";
 import { METODO, STATUS_TONE, statusLabel, PayHint, type TurnoRow } from "@/components/panel/TurnosTable";
 import { formatARS } from "@/lib/money";
 import {
@@ -43,6 +45,11 @@ export function TurnoDetailDrawer({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  // Fecha controlada (DatePicker con calendario). Se sincroniza al navegar.
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  useEffect(() => {
+    if (initial) setDate(new Date(`${initial.dateValue}T12:00:00`));
+  }, [initial?.id, initial?.dateValue]);
 
   const idx = initial ? items.findIndex((x) => x.id === initial.id) : -1;
   const canPrev = idx > 0;
@@ -50,6 +57,7 @@ export function TurnoDetailDrawer({
 
   if (!initial) return <Drawer open={false} title="" onClose={onClose}>{null}</Drawer>;
   const r = initial;
+  const dateStr = date ? format(date, "yyyy-MM-dd") : r.dateValue;
 
   const run = (action: (fd: FormData) => Promise<void>, msg: string, extra?: Record<string, string>) => {
     const fd = new FormData();
@@ -123,7 +131,8 @@ export function TurnoDetailDrawer({
         </select>
       </Field>
       <Field label="Fecha">
-        <input className={inputClass} type="date" name="date" defaultValue={r.dateValue} />
+        <DatePicker value={date} onChange={setDate} placeholder="Elegí una fecha" className="w-full" />
+        <input type="hidden" name="date" value={dateStr} />
       </Field>
       <Field label="Hora">
         <input className={inputClass} type="time" name="time" defaultValue={r.time} step={300} />
