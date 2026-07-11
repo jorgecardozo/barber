@@ -65,7 +65,7 @@ export default async function TurnosPage() {
   const wiDates = horizonDates().map((d) => ({ value: d, label: fmtDateLong(d) }));
 
   return (
-    <main className="mx-auto flex min-h-0 w-full max-w-6xl min-w-0 flex-1 flex-col overflow-x-clip px-4 py-6 sm:px-6 lg:px-8">
+    <main className="flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-x-clip px-4 py-6 sm:px-6 lg:px-8">
       <TurnosTable
         rows={rows}
         barbers={barbersFilter}

@@ -14,7 +14,7 @@ export default async function ServiciosPage() {
   const isAdmin = staff.role === "admin";
 
   return (
-    <main className="mx-auto flex min-h-0 w-full max-w-5xl min-w-0 flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
+    <main className="flex min-h-0 w-full min-w-0 flex-1 flex-col px-4 py-6 sm:px-6 lg:px-8">
       <ServicesTable
         services={services.map((s) => ({
           id: s.id,

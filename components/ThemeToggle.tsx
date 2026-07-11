@@ -16,7 +16,8 @@ export function ThemeToggle() {
     <Button
       variant="outline"
       size="sm"
-      title={isDark ? "Modo claro" : "Modo oscuro"}
+      suppressHydrationWarning
+      title={!mounted ? "Cambiar tema" : isDark ? "Modo claro" : "Modo oscuro"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className="w-9 px-0"
     >
