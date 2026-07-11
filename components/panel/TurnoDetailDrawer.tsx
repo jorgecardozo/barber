@@ -4,21 +4,43 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { CircleDollarSign } from "lucide-react";
+import { CircleDollarSign, ChevronDown } from "lucide-react";
 import { Drawer, Field, inputClass } from "@/components/panel/Drawer";
 import { DatePicker } from "@/components/ui/date-picker";
 import { TimePicker } from "@/components/ui/time-picker";
-import { METODO, ESTADOS, STATUS_TONE, PayHint, type TurnoRow } from "@/components/panel/TurnosTable";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "@/components/panel/ui";
+import { METODO, ESTADOS, STATUS_TONE, statusLabel, PayHint, type TurnoRow } from "@/components/panel/TurnosTable";
 import type { AppointmentStatus } from "@/lib/types";
 
-// Color del texto del selector según el tono del estado (mismos colores que el badge).
-const TONE_COLOR: Record<string, string | undefined> = {
-  cyan: "#1de9d6",
-  amber: "#fcd34d",
-  red: "#fb7185",
-  green: "#34d399",
-  gray: undefined, // hereda el color de texto por defecto
-};
+// Selector de estado con badges de color (el <select> nativo no colorea las
+// opciones). Popover por encima del drawer, igual que los pickers de fecha/hora.
+function StatusSelect({ value, onChange }: { value: AppointmentStatus; onChange: (v: AppointmentStatus) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="outline" className="w-full justify-between font-normal">
+          <Badge tone={STATUS_TONE[value]}>{statusLabel(value)}</Badge>
+          <ChevronDown className="size-4 opacity-70" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" style={{ zIndex: 100 }} className="w-[--radix-popover-trigger-width] p-1">
+        {ESTADOS.map((e) => (
+          <button
+            key={e.v}
+            type="button"
+            onClick={() => { onChange(e.v); setOpen(false); }}
+            className="flex w-full items-center rounded-md px-2 py-1.5 hover:bg-accent"
+          >
+            <Badge tone={STATUS_TONE[e.v]}>{e.l}</Badge>
+          </button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
 import { formatARS } from "@/lib/money";
 import {
   registrarSaldoAction,
@@ -154,19 +176,8 @@ export function TurnoDetailDrawer({
       </Field>
 
       <Field label="Estado">
-        <select
-          className={`${inputClass} font-medium`}
-          style={{ color: TONE_COLOR[STATUS_TONE[status]] }}
-          name="status"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as AppointmentStatus)}
-        >
-          {ESTADOS.map((e) => (
-            <option key={e.v} value={e.v} style={{ color: TONE_COLOR[STATUS_TONE[e.v]] ?? "#f4f4f5" }}>
-              {e.l}
-            </option>
-          ))}
-        </select>
+        <StatusSelect value={status} onChange={setStatus} />
+        <input type="hidden" name="status" value={status} />
       </Field>
 
       {/* Solo lectura */}
