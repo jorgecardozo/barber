@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { supabaseAdmin } from "./supabase/admin";
+import { supabaseAdmin } from "@/shared/api/supabase/admin";
 
 export type Sucursal = { id: string; nombre: string; direccion: string; activa: boolean };
 

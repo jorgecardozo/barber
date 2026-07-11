@@ -4,10 +4,10 @@ import { useMemo, useState, useTransition } from "react";
 import { motion } from "motion/react";
 import { Shuffle, Check, Sparkles } from "lucide-react";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/shared/ui/button";
+import { Card, CardContent } from "@/shared/ui/card";
 import { guardarAvatarAction } from "@/lib/actions";
-import { AVATAR_OPTIONS, AVATAR_DEFAULTS, buildAvatarUrl, type AvatarOpts } from "@/lib/avatar";
+import { AVATAR_OPTIONS, AVATAR_DEFAULTS, buildAvatarUrl, type AvatarOpts } from "@/shared/lib/avatar";
 
 type Opts = Omit<AvatarOpts, "seed">;
 

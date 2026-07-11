@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { SectionHeading } from "./SectionHeading";
 import { Reveal, Stagger, StaggerItem } from "./Motion";
-import { FRAGRANCES, BUSINESS } from "@/lib/data";
+import { FRAGRANCES, BUSINESS } from "@/shared/config/data";
 
 export function Fragrances() {
   return (

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion, type Variants } from "motion/react";
-import { BUSINESS } from "@/lib/data";
+import { BUSINESS } from "@/shared/config/data";
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 

@@ -4,9 +4,9 @@ import { ClientShell } from "@/components/ClientShell";
 import { BookingWizard } from "@/components/reservar/BookingWizard";
 import { getSessionUser } from "@/lib/auth";
 import { listServices, listBarbers } from "@/lib/store";
-import { depositForPrice } from "@/lib/decisions";
+import { depositForPrice } from "@/shared/config/decisions";
 import { horizonDates } from "@/lib/availability";
-import { fmtDateLong, fmtDateShort } from "@/lib/time";
+import { fmtDateLong, fmtDateShort } from "@/shared/lib/time";
 
 export const metadata: Metadata = { title: "Reservar turno · Flow Site" };
 export const dynamic = "force-dynamic";

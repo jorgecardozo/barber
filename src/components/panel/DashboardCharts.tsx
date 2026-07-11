@@ -17,9 +17,9 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from "@/components/ui/chart";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+} from "@/shared/ui/chart";
+import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 
 type Barbero = { id: string; name: string; img: string; ingreso: number; cortes: number };
 type Metodo = { name: string; key: string; value: number };

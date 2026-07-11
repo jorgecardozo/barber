@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/panel/PageHeader";
 import { BarberFormDrawer } from "@/components/panel/BarberFormDrawer";
 import { BarberActiveToggle } from "@/components/panel/BarberActiveToggle";
 import { FiltersBar, PrimaryButton, Pagination, InfiniteFooter, Badge, Panel, ModeToggle, type ListMode } from "@/components/panel/ui";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 
 export type BarberRow = {
   id: string;

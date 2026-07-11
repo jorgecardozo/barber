@@ -4,8 +4,8 @@ import { PanelShell, CLIENT_SECTIONS } from "@/components/panel/PanelShell";
 import { MisTurnosView, type MisTurnoRow } from "@/components/panel/MisTurnosView";
 import { getSessionUser } from "@/lib/auth";
 import { appointmentsForCustomer, listBarbers, listServices } from "@/lib/store";
-import { DECISIONS } from "@/lib/decisions";
-import { fmtDateLong, fmtTime } from "@/lib/time";
+import { DECISIONS } from "@/shared/config/decisions";
+import { fmtDateLong, fmtTime } from "@/shared/lib/time";
 
 export const metadata: Metadata = { title: "Mis turnos · Flow Site" };
 export const dynamic = "force-dynamic";

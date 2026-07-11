@@ -5,8 +5,8 @@ import { ClientShell } from "@/components/ClientShell";
 import { getSessionUser } from "@/lib/auth";
 import { getAppointment, getBarber, getService } from "@/lib/store";
 import { pagarSeniaAction } from "@/lib/actions";
-import { formatARS } from "@/lib/money";
-import { fmtDateLong, fmtTime } from "@/lib/time";
+import { formatARS } from "@/shared/lib/money";
+import { fmtDateLong, fmtTime } from "@/shared/lib/time";
 
 export const metadata: Metadata = { title: "Pagar seña · Flow Site" };
 export const dynamic = "force-dynamic";

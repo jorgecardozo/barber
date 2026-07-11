@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { SectionHeading } from "./SectionHeading";
 import { Reveal, Stagger, StaggerItem } from "./Motion";
-import { BARBERS } from "@/lib/data";
+import { BARBERS } from "@/shared/config/data";
 
 export function Barbers() {
   return (

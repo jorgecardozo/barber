@@ -2,9 +2,9 @@
 
 import * as React from "react";
 import { Clock, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/shared/lib/utils";
+import { Button } from "@/shared/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 
 // Slots cada `stepMin` entre `from` y `to` (formato "HH:mm", 24h) — solo atajos.
 function buildSlots(from: string, to: string, stepMin: number) {

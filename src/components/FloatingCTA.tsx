@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { BUSINESS } from "@/lib/data";
+import { BUSINESS } from "@/shared/config/data";
 
 /** Botón flotante de WhatsApp. Aparece tras scrollear un poco. */
 export function FloatingCTA() {

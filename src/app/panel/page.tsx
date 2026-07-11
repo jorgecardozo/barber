@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { Clock3, DollarSign, Scissors, Users } from "lucide-react";
 import { DashboardCharts } from "@/components/panel/DashboardCharts";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/shared/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
+import { Button } from "@/shared/ui/button";
 import { requireStaff } from "@/lib/auth";
 import {
   allUpcomingAppointments,
@@ -15,8 +15,8 @@ import {
   listBarbers,
   listPayments,
 } from "@/lib/store";
-import { formatARS } from "@/lib/money";
-import { addDays, fmtDateLong, fmtDateShort, todayAR } from "@/lib/time";
+import { formatARS } from "@/shared/lib/money";
+import { addDays, fmtDateLong, fmtDateShort, todayAR } from "@/shared/lib/time";
 
 export const metadata: Metadata = { title: "Dashboard · Panel Flow Site" };
 export const dynamic = "force-dynamic";

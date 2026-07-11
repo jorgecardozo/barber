@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { MoreHorizontal, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker";
+import { Button } from "@/shared/ui/button";
+import { DatePicker } from "@/shared/ui/date-picker";
 import { DataTable, ColumnsToggle, useColumnVisibility, type Column } from "@/components/panel/DataTable";
 import { PageHeader } from "@/components/panel/PageHeader";
 import { Badge, FiltersBar, FilterField, FilterSelect, Pagination, InfiniteFooter, Panel, ModeToggle, type BadgeTone, type ListMode } from "@/components/panel/ui";
@@ -19,8 +19,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { formatARS } from "@/lib/money";
+} from "@/shared/ui/dropdown-menu";
+import { formatARS } from "@/shared/lib/money";
 import {
   panelSetStatusAction,
   registrarSaldoAction,

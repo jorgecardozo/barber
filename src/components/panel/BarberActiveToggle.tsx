@@ -3,7 +3,7 @@
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@/shared/ui/switch";
 import { setBarberActiveAction } from "@/lib/admin-actions";
 
 export function BarberActiveToggle({ id, active }: { id: string; active: boolean }) {

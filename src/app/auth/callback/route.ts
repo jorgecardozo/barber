@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createClient } from "@/shared/api/supabase/server";
+import { supabaseAdmin } from "@/shared/api/supabase/admin";
 
 // Callback de OAuth (Google): intercambia el code por sesión, asegura el profile
 // del usuario y redirige a `next`.

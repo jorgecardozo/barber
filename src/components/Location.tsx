@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Reveal } from "./Motion";
 import { MapPinIcon, ClockIcon, InstagramIcon } from "./icons";
-import { BUSINESS } from "@/lib/data";
+import { BUSINESS } from "@/shared/config/data";
 
 export function Location() {
   const mapsQuery = encodeURIComponent(BUSINESS.address);

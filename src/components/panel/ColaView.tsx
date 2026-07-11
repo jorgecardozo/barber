@@ -5,16 +5,16 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
 import { Check, X, UserPlus, Zap, Loader2, Scissors } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
+import { Button } from "@/shared/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { formatARS } from "@/lib/money";
+} from "@/shared/ui/dropdown-menu";
+import { formatARS } from "@/shared/lib/money";
 import { empezarTurnoAction, noShowTurnoAction, terminarTurnoAction } from "@/lib/actions";
 
 type QueueItem = {

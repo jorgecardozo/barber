@@ -15,11 +15,11 @@ import {
   SlotTakenError,
   updateAppointment,
   updateBarber,
-} from "./store";
-import { getSessionUser, requireStaff } from "./auth";
-import { createClient } from "./supabase/server";
-import { DECISIONS } from "./decisions";
-import type { PaymentMethod } from "./types";
+} from "@/lib/store";
+import { getSessionUser, requireStaff } from "@/lib/auth";
+import { createClient } from "@/shared/api/supabase/server";
+import { DECISIONS } from "@/shared/config/decisions";
+import type { PaymentMethod } from "@/lib/types";
 
 // ---------------- Auth (Supabase) ----------------
 export async function loginAction(formData: FormData) {

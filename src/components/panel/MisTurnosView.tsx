@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/panel/PageHeader";
 import { Panel, Badge } from "@/components/panel/ui";
 import { STATUS_TONE, statusLabel } from "@/components/panel/TurnosTable";
 import { cancelarTurnoAction } from "@/lib/actions";
-import { formatARS } from "@/lib/money";
+import { formatARS } from "@/shared/lib/money";
 import type { AppointmentStatus } from "@/lib/types";
 
 // Para el cliente, un turno "hold" es un pago pendiente.

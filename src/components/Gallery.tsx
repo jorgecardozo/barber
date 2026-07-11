@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { SectionHeading } from "./SectionHeading";
 import { Reveal } from "./Motion";
-import { GALLERY } from "@/lib/data";
+import { GALLERY } from "@/shared/config/data";
 
 export function Gallery() {
   return (

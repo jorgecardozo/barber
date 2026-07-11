@@ -13,11 +13,11 @@ import {
   setWorkingHours,
   updateBarber,
   updateService,
-} from "./store";
-import { requireAdmin, requireStaff } from "./auth";
-import { createClient } from "./supabase/server";
-import { supabaseAdmin } from "./supabase/admin";
-import type { PaymentMethod, WorkingHours } from "./types";
+} from "@/lib/store";
+import { requireAdmin, requireStaff } from "@/lib/auth";
+import { createClient } from "@/shared/api/supabase/server";
+import { supabaseAdmin } from "@/shared/api/supabase/admin";
+import type { PaymentMethod, WorkingHours } from "@/lib/types";
 
 // ---------------- Auth: Google (OAuth) + registro barbero ----------------
 export async function loginGoogleAction(formData: FormData) {

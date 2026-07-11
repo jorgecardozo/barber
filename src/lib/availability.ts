@@ -4,9 +4,9 @@
  * duración del servicio, buffer entre turnos, anticipación mínima y los turnos
  * ya tomados (holds no vencidos + confirmados).
  */
-import { DECISIONS } from "./decisions";
-import { activeAppointmentsForBarber, getService, workingHoursFor, workingHoursForBarber } from "./store";
-import { addDays, arDateTime, hhmmToMin, minToHHMM, nowMs, todayAR, weekdayOf } from "./time";
+import { DECISIONS } from "@/shared/config/decisions";
+import { activeAppointmentsForBarber, getService, workingHoursFor, workingHoursForBarber } from "@/lib/store";
+import { addDays, arDateTime, hhmmToMin, minToHHMM, nowMs, todayAR, weekdayOf } from "@/shared/lib/time";
 
 export interface Slot {
   hhmm: string;

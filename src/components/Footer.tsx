@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { BUSINESS } from "@/lib/data";
+import { BUSINESS } from "@/shared/config/data";
 
 export function Footer() {
   return (

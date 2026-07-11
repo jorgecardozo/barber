@@ -2,15 +2,15 @@
 
 import type { ReactNode } from "react";
 import { ChevronLeft, ChevronRight, List, MousePointer2, Plus, Search, SlidersHorizontal, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/shared/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/ui/select";
 
 // Primitivos de panel con la MISMA estructura/estilos que kampo
 // (campo-front/src/modules/shared/ui), adaptados a los tokens de flow-site

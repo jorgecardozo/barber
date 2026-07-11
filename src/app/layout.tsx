@@ -3,9 +3,9 @@ import { Anton, Inter } from "next/font/google";
 import "./globals.css";
 import { CursorGlow } from "@/components/CursorGlow";
 import { FloatingCTA } from "@/components/FloatingCTA";
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/shared/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
-import { cn } from "@/lib/utils";
+import { cn } from "@/shared/lib/utils";
 
 const anton = Anton({
   variable: "--font-anton",

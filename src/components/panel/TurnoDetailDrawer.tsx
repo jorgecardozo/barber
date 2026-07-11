@@ -6,10 +6,10 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { CircleDollarSign, ChevronDown } from "lucide-react";
 import { Drawer, Field, inputClass } from "@/components/panel/Drawer";
-import { DatePicker } from "@/components/ui/date-picker";
-import { TimePicker } from "@/components/ui/time-picker";
-import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DatePicker } from "@/shared/ui/date-picker";
+import { TimePicker } from "@/shared/ui/time-picker";
+import { Button } from "@/shared/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
 import { Badge } from "@/components/panel/ui";
 import { METODO, ESTADOS, STATUS_TONE, statusLabel, PayHint, type TurnoRow } from "@/components/panel/TurnosTable";
 import type { AppointmentStatus } from "@/lib/types";
@@ -41,7 +41,7 @@ function StatusSelect({ value, onChange }: { value: AppointmentStatus; onChange:
     </Popover>
   );
 }
-import { formatARS } from "@/lib/money";
+import { formatARS } from "@/shared/lib/money";
 import {
   registrarSaldoAction,
   registrarSenaEfectivoAction,

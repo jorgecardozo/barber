@@ -7,7 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/ui/dropdown-menu";
 import { setSucursalAction } from "@/lib/sucursal-actions";
 import type { Sucursal } from "@/lib/sucursal";
 

@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { format } from "date-fns";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
+import { Button } from "@/shared/ui/button";
+import { Switch } from "@/shared/ui/switch";
 import { Drawer, Field, inputClass } from "@/components/panel/Drawer";
-import { DatePicker } from "@/components/ui/date-picker";
-import { TimePicker } from "@/components/ui/time-picker";
-import { formatARS } from "@/lib/money";
+import { DatePicker } from "@/shared/ui/date-picker";
+import { TimePicker } from "@/shared/ui/time-picker";
+import { formatARS } from "@/shared/lib/money";
 import { crearTurnoWalkInAction } from "@/lib/admin-actions";
 
 type Service = { id: string; name: string; priceCents: number; durationMin: number; depositCents: number };

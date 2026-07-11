@@ -8,10 +8,10 @@
  * pública. El anti-doble-reserva lo hace la DB (EXCLUDE no_double_booking):
  * un insert que solapa devuelve 23P01 → lo traducimos a SlotTakenError.
  */
-import { supabaseAdmin as sb } from "./supabase/admin";
-import { depositForPrice } from "./decisions";
-import { hhmmToMin, minToHHMM, nowMs } from "./time";
-import type { Appointment, Barber, Payment, PaymentMethod, Service, User, WorkingHours } from "./types";
+import { supabaseAdmin as sb } from "@/shared/api/supabase/admin";
+import { depositForPrice } from "@/shared/config/decisions";
+import { hhmmToMin, minToHHMM, nowMs } from "@/shared/lib/time";
+import type { Appointment, Barber, Payment, PaymentMethod, Service, User, WorkingHours } from "@/lib/types";
 
 // estados que "ocupan" agenda (mismo conjunto que el EXCLUDE / slots_publicos + en_curso)
 const OCCUPYING = ["hold", "confirmada", "en_curso", "completada", "no_show"] as const;

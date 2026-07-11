@@ -5,8 +5,8 @@ import { DataTable, ColumnsToggle, useColumnVisibility, type Column } from "@/co
 import { PageHeader } from "@/components/panel/PageHeader";
 import { ServiceFormDrawer } from "@/components/panel/ServiceFormDrawer";
 import { FiltersBar, PrimaryButton, Pagination, InfiniteFooter, Panel, ModeToggle, type ListMode } from "@/components/panel/ui";
-import { depositForPrice } from "@/lib/decisions";
-import { formatARS } from "@/lib/money";
+import { depositForPrice } from "@/shared/config/decisions";
+import { formatARS } from "@/shared/lib/money";
 
 export type ServiceRow = {
   id: string;

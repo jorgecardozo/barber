@@ -4,7 +4,7 @@
  * DECISIONS.tzOffset). En producción con Supabase se persiste timestamptz UTC
  * y se computa con la zona IANA; acá usamos el offset fijo para la simulación.
  */
-import { DECISIONS } from "./decisions";
+import { DECISIONS } from "@/shared/config/decisions";
 
 const OFF = DECISIONS.tzOffset; // "-03:00"
 const TZ = DECISIONS.timezone;

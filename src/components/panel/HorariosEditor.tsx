@@ -4,9 +4,9 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Loader2, Check, CalendarClock, Copy } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/input";
+import { Switch } from "@/shared/ui/switch";
 import { setWorkingHoursAction } from "@/lib/admin-actions";
 
 type DayState = { closed: boolean; open: string; close: string; breakStart: string; breakEnd: string };

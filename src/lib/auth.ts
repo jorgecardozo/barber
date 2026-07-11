@@ -2,9 +2,9 @@
  * Auth real con Supabase Auth. La sesión vive en cookies (manejadas por
  * @supabase/ssr); acá solo la leemos y mapeamos el profile al tipo User.
  */
-import { createClient } from "./supabase/server";
-import { supabaseAdmin } from "./supabase/admin";
-import type { User } from "./types";
+import { createClient } from "@/shared/api/supabase/server";
+import { supabaseAdmin } from "@/shared/api/supabase/admin";
+import type { User } from "@/lib/types";
 
 export async function getSessionUser(): Promise<User | null> {
   const supabase = await createClient();

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ColaView } from "@/components/panel/ColaView";
 import { requireStaff } from "@/lib/auth";
 import { appointmentsOnDate, getBarberByUserId, getUser, listBarbers, listServices } from "@/lib/store";
-import { fmtTime, nowMs, todayAR } from "@/lib/time";
+import { fmtTime, nowMs, todayAR } from "@/shared/lib/time";
 
 export const metadata: Metadata = { title: "Cola · Panel Flow Site" };
 export const dynamic = "force-dynamic";

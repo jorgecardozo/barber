@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SectionHeading } from "./SectionHeading";
 import { Reveal, Stagger, StaggerItem } from "./Motion";
-import { SERVICES } from "@/lib/data";
+import { SERVICES } from "@/shared/config/data";
 
 export function Services() {
   return (
