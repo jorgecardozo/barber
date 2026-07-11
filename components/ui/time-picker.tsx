@@ -6,14 +6,12 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-// Slots cada `stepMin` entre `from` y `to` (formato "HH:mm", 24h).
+// Slots cada `stepMin` entre `from` y `to` (formato "HH:mm", 24h) — solo atajos.
 function buildSlots(from: string, to: string, stepMin: number) {
   const [fh, fm] = from.split(":").map(Number);
   const [th, tm] = to.split(":").map(Number);
-  const start = fh * 60 + fm;
-  const end = th * 60 + tm;
   const out: string[] = [];
-  for (let m = start; m <= end; m += stepMin) {
+  for (let m = fh * 60 + fm; m <= th * 60 + tm; m += stepMin) {
     out.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
   }
   return out;
@@ -37,15 +35,14 @@ export function TimePicker({
   className?: string;
 }) {
   const [open, setOpen] = React.useState(false);
-  const slots = React.useMemo(() => {
-    const base = buildSlots(from, to, stepMin);
-    // Si la hora actual no cae en la grilla, la agregamos para poder mostrarla.
-    return value && !base.includes(value) ? [value, ...base].sort() : base;
-  }, [from, to, stepMin, value]);
+  const slots = React.useMemo(() => buildSlots(from, to, stepMin), [from, to, stepMin]);
 
   const selectedRef = React.useRef<HTMLButtonElement | null>(null);
   React.useEffect(() => {
-    if (open) selectedRef.current?.scrollIntoView({ block: "center" });
+    if (!open) return;
+    // Esperamos a que monte el contenido del popover para scrollear al valor.
+    const t = setTimeout(() => selectedRef.current?.scrollIntoView({ block: "center" }), 0);
+    return () => clearTimeout(t);
   }, [open]);
 
   return (
@@ -62,7 +59,16 @@ export function TimePicker({
           </Button>
         </PopoverTrigger>
         <PopoverContent align="start" style={{ zIndex: 100 }} className="w-[--radix-popover-trigger-width] p-1">
-          <div className="max-h-60 overflow-y-auto">
+          {/* Entrada libre: cualquier hora (paso 1 min). */}
+          <input
+            type="time"
+            step={60}
+            value={value || ""}
+            onChange={(e) => onChange(e.target.value)}
+            className="mb-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary [color-scheme:dark]"
+          />
+          {/* Atajos cada 15 min. */}
+          <div className="max-h-52 overflow-y-auto">
             {slots.map((s) => {
               const active = s === value;
               return (
