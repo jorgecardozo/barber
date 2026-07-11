@@ -8,6 +8,7 @@ import { Check, X, CircleDollarSign, Ban } from "lucide-react";
 import { Drawer, Field, inputClass } from "@/components/panel/Drawer";
 import { Badge } from "@/components/panel/ui";
 import { DatePicker } from "@/components/ui/date-picker";
+import { TimePicker } from "@/components/ui/time-picker";
 import { METODO, STATUS_TONE, statusLabel, PayHint, type TurnoRow } from "@/components/panel/TurnosTable";
 import { formatARS } from "@/lib/money";
 import {
@@ -45,11 +46,15 @@ export function TurnoDetailDrawer({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  // Fecha controlada (DatePicker con calendario). Se sincroniza al navegar.
+  // Fecha/Hora controladas (DatePicker + TimePicker). Se sincronizan al navegar.
   const [date, setDate] = useState<Date | undefined>(undefined);
+  const [time, setTime] = useState("");
   useEffect(() => {
-    if (initial) setDate(new Date(`${initial.dateValue}T12:00:00`));
-  }, [initial?.id, initial?.dateValue]);
+    if (initial) {
+      setDate(new Date(`${initial.dateValue}T12:00:00`));
+      setTime(initial.time);
+    }
+  }, [initial?.id, initial?.dateValue, initial?.time]);
 
   const idx = initial ? items.findIndex((x) => x.id === initial.id) : -1;
   const canPrev = idx > 0;
@@ -135,7 +140,8 @@ export function TurnoDetailDrawer({
         <input type="hidden" name="date" value={dateStr} />
       </Field>
       <Field label="Hora">
-        <input className={inputClass} type="time" name="time" defaultValue={r.time} step={300} />
+        <TimePicker value={time} onChange={setTime} className="w-full" />
+        <input type="hidden" name="time" value={time} />
       </Field>
 
       {/* Solo lectura */}
