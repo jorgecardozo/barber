@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { AppHeader } from "@/components/AppHeader";
+import { ClientShell } from "@/components/ClientShell";
 import { getSessionUser } from "@/lib/auth";
 import { getAppointment, getBarber, getService } from "@/lib/store";
 import { pagarSeniaAction } from "@/lib/actions";
@@ -30,10 +30,8 @@ export default async function PagoPage({
   const expired = appt && appt.status !== "hold";
 
   return (
-    <>
-      <AppHeader user={user ?? null} />
-      <main className="flex-1">
-        <section className="mx-auto max-w-lg px-5 py-14">
+    <ClientShell user={user ?? null}>
+      <section className="mx-auto max-w-lg px-5 py-14">
           {!appt || !service || !barber ? (
             <Empty msg="No encontramos esa reserva." />
           ) : expired ? (
@@ -91,8 +89,7 @@ export default async function PagoPage({
             </>
           )}
         </section>
-      </main>
-    </>
+    </ClientShell>
   );
 }
 

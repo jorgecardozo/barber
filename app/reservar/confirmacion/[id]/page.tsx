@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { AppHeader } from "@/components/AppHeader";
+import { ClientShell } from "@/components/ClientShell";
 import { getSessionUser } from "@/lib/auth";
 import { getAppointment, getBarber, getService } from "@/lib/store";
 import { DECISIONS } from "@/lib/decisions";
@@ -33,10 +33,8 @@ export default async function ConfirmacionPage({ params }: { params: Promise<{ i
     : "#";
 
   return (
-    <>
-      <AppHeader user={user ?? null} />
-      <main className="flex-1">
-        <section className="mx-auto max-w-lg px-5 py-16 text-center">
+    <ClientShell user={user ?? null}>
+      <section className="mx-auto max-w-lg px-5 py-16 text-center">
           {!ok ? (
             <div className="rounded-2xl border border-white/8 bg-ink-2 p-8">
               <p className="text-ash">No encontramos ese turno confirmado.</p>
@@ -90,8 +88,7 @@ export default async function ConfirmacionPage({ params }: { params: Promise<{ i
             </>
           )}
         </section>
-      </main>
-    </>
+    </ClientShell>
   );
 }
 

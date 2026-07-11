@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { AppHeader } from "@/components/AppHeader";
+import { ClientShell } from "@/components/ClientShell";
 import { BookingWizard } from "@/components/reservar/BookingWizard";
 import { getSessionUser } from "@/lib/auth";
 import { listServices, listBarbers } from "@/lib/store";
@@ -47,17 +47,14 @@ export default async function ReservarPage({
   });
 
   return (
-    <>
-      <AppHeader user={user ? { ...user } : null} />
-      <main className="flex-1">
-        <BookingWizard
-          services={services}
-          barbers={barbers}
-          dates={dates}
-          userName={user?.name ?? null}
-          slotTaken={sp.error === "tomado"}
-        />
-      </main>
-    </>
+    <ClientShell user={user}>
+      <BookingWizard
+        services={services}
+        barbers={barbers}
+        dates={dates}
+        userName={user?.name ?? null}
+        slotTaken={sp.error === "tomado"}
+      />
+    </ClientShell>
   );
 }
