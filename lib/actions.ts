@@ -13,7 +13,7 @@ import {
   setAppointmentStatus,
   setUserAvatar,
   SlotTakenError,
-  updateAppointmentCustomer,
+  updateAppointment,
   updateBarber,
 } from "./store";
 import { getSessionUser, requireStaff } from "./auth";
@@ -149,22 +149,29 @@ export async function panelSetStatusAction(formData: FormData) {
   revalidatePath("/panel/cola");
 }
 
-/** Edita los datos del cliente del turno (nombre / teléfono / notas). */
+/** Edita un turno: datos del cliente + reprogramación (barbero/servicio/fecha/hora). */
 export async function updateTurnoAction(formData: FormData) {
   const staff = await requireStaff();
   if (!staff) redirect("/panel/ingresar");
   const id = String(formData.get("id") || "");
   const appt = await getAppointment(id);
   if (!appt) redirect("/panel/turnos");
-  // Barbero solo edita sus propios turnos.
+  // Barbero solo edita sus propios turnos (y no puede reasignar a otro barbero).
   if (staff.role === "barbero" && appt.barberId !== staff.barberId) redirect("/panel");
-  await updateAppointmentCustomer(id, {
+  const barberId =
+    staff.role === "barbero" ? appt.barberId : String(formData.get("barberId") || appt.barberId);
+  await updateAppointment(id, {
     customerName: String(formData.get("customerName") || "").trim() || appt.customerName,
     customerPhone: String(formData.get("customerPhone") || "").trim(),
     notes: String(formData.get("notes") || "").trim() || undefined,
+    barberId,
+    serviceId: String(formData.get("serviceId") || appt.serviceId),
+    dateStr: String(formData.get("date") || appt.start.slice(0, 10)),
+    timeHHMM: String(formData.get("time") || appt.start.slice(11, 16)),
   });
   revalidatePath("/panel/turnos");
   revalidatePath("/panel");
+  revalidatePath("/panel/cola");
 }
 
 /** Cola: sentar al cliente en el sillón (en curso). */

@@ -28,12 +28,16 @@ export function TurnoDetailDrawer({
   open,
   initial,
   items,
+  barbers,
+  services,
   onNavigate,
   onClose,
 }: {
   open: boolean;
   initial: TurnoRow | null;
   items: TurnoRow[];
+  barbers: { id: string; name: string }[];
+  services: { id: string; name: string }[];
   onNavigate: (r: TurnoRow) => void;
   onClose: () => void;
 }) {
@@ -71,7 +75,7 @@ export function TurnoDetailDrawer({
         toast.success("Turno actualizado");
         onClose();
       } catch {
-        toast.error("No se pudieron guardar los cambios.");
+        toast.error("No se pudo guardar. Puede que ese barbero ya tenga un turno en ese horario.");
       }
     });
   };
@@ -102,11 +106,30 @@ export function TurnoDetailDrawer({
       <Field label="Teléfono">
         <input className={inputClass} name="customerPhone" defaultValue={r.customerPhone} placeholder="11…" />
       </Field>
+      <Field label="Barbero">
+        <select className={inputClass} name="barberId" defaultValue={r.barberId} disabled={barbers.length <= 1}>
+          {barbers.some((b) => b.id === r.barberId) ? null : <option value={r.barberId}>{r.barberName}</option>}
+          {barbers.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Servicio">
+        <select className={inputClass} name="serviceId" defaultValue={r.serviceId}>
+          {services.some((s) => s.id === r.serviceId) ? null : <option value={r.serviceId}>{r.serviceName}</option>}
+          {services.map((s) => (
+            <option key={s.id} value={s.id}>{s.name}</option>
+          ))}
+        </select>
+      </Field>
+      <Field label="Fecha">
+        <input className={inputClass} type="date" name="date" defaultValue={r.dateValue} />
+      </Field>
+      <Field label="Hora">
+        <input className={inputClass} type="time" name="time" defaultValue={r.time} step={300} />
+      </Field>
 
-      {/* Solo lectura (barbero/servicio/horario los gobierna la reserva) */}
-      <Info label="Barbero">{r.barberName}</Info>
-      <Info label="Servicio">{r.serviceName}</Info>
-      <Info label="Fecha y hora">{r.dateLabel} · {r.time} hs</Info>
+      {/* Solo lectura */}
       <Info label="Estado">
         <Badge tone={STATUS_TONE[r.status]}>{statusLabel(r.status)}</Badge>
       </Info>

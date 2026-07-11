@@ -35,6 +35,7 @@ export default async function TurnosPage() {
       notes: a.customerNotes,
       barberId: a.barberId,
       barberName: barbName.get(a.barberId) ?? a.barberId,
+      serviceId: a.serviceId,
       serviceName: svcName.get(a.serviceId) ?? a.serviceId,
       priceCents: a.priceCents,
       depositCents: a.depositCents,
@@ -70,6 +71,7 @@ export default async function TurnosPage() {
       <TurnosTable
         rows={rows}
         barbers={barbersFilter}
+        services={services.map((s) => ({ id: s.id, name: s.name }))}
         today={todayAR()}
         headerActions={<WalkInDialog services={wiServices} barbers={wiBarbers} dates={wiDates} />}
       />

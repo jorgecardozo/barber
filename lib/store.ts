@@ -397,20 +397,53 @@ export async function setAppointmentStatus(id: string, status: Appointment["stat
   return (await getAppointment(id))!;
 }
 
-// Edita los datos del cliente del turno (snapshot) + notas. No toca
-// barbero/servicio/horario (eso lo gobierna la reserva y el anti-solape).
-export async function updateAppointmentCustomer(
+// Edita un turno desde el panel: datos del cliente + reprogramación
+// (barbero / servicio / fecha-hora). Respeta el anti-solape: si el nuevo
+// horario choca con otro turno del barbero, la DB devuelve 23P01 → SlotTakenError.
+// Si cambia el servicio, recalcula precio/seña/duración; si no, los conserva.
+export async function updateAppointment(
   id: string,
-  input: { customerName: string; customerPhone: string; notes?: string },
+  input: {
+    customerName: string;
+    customerPhone: string;
+    notes?: string;
+    barberId: string;
+    serviceId: string;
+    dateStr: string; // yyyy-mm-dd (AR)
+    timeHHMM: string; // HH:mm (AR)
+  },
 ): Promise<Appointment> {
-  await sb
+  const appt = await getAppointment(id);
+  if (!appt) throw new StoreError("Turno inexistente");
+  const svc = await getService(input.serviceId);
+  if (!svc) throw new StoreError("Servicio inexistente");
+
+  const serviceChanged = input.serviceId !== appt.serviceId;
+  const price = serviceChanged ? svc.priceCents : appt.priceCents;
+  const deposit = serviceChanged ? depositForPrice(svc.priceCents) : appt.depositCents;
+
+  const start = new Date(`${input.dateStr}T${input.timeHHMM}:00-03:00`);
+  if (Number.isNaN(start.getTime())) throw new StoreError("Fecha u hora inválida");
+  const end = new Date(start.getTime() + svc.durationMin * 60_000);
+
+  const { error } = await sb
     .from("appointments")
     .update({
       customer_name_snapshot: input.customerName,
       customer_phone_snapshot: input.customerPhone,
       customer_notes: input.notes ?? null,
+      barber_id: input.barberId,
+      service_id: svc.id,
+      service_name_snapshot: svc.name,
+      duration_min_snapshot: svc.durationMin,
+      price_cents: price,
+      deposit_cents: deposit,
+      starts_at: start.toISOString(),
+      ends_at: end.toISOString(),
     })
     .eq("id", id);
+  if (isExclusion(error)) throw new SlotTakenError();
+  if (error) throw new StoreError(error.message);
   return (await getAppointment(id))!;
 }
 

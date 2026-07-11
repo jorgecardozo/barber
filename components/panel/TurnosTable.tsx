@@ -39,6 +39,7 @@ export type TurnoRow = {
   notes: string;
   barberId: string;
   barberName: string;
+  serviceId: string;
   serviceName: string;
   priceCents: number;
   depositCents: number;
@@ -72,11 +73,13 @@ export const STATUS_TONE: Record<AppointmentStatus, BadgeTone> = {
 export function TurnosTable({
   rows,
   barbers,
+  services,
   today,
   headerActions,
 }: {
   rows: TurnoRow[];
   barbers: { id: string; name: string }[];
+  services: { id: string; name: string }[];
   today: string;
   headerActions?: ReactNode;
 }) {
@@ -295,6 +298,8 @@ export function TurnosTable({
         open={detailOpen}
         initial={selected}
         items={filtered}
+        barbers={barbers}
+        services={services}
         onNavigate={setSelected}
         onClose={() => setDetailOpen(false)}
       />
