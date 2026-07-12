@@ -107,12 +107,14 @@ export function PrimaryButton({
 // ---------- Badge con tonos ----------
 export type BadgeTone = "gray" | "green" | "amber" | "red" | "cyan";
 
+// Tonos legibles en ambos temas: texto oscuro sobre tinte suave en light,
+// texto claro sobre tinte en dark.
 const badgeTones: Record<BadgeTone, string> = {
   gray: "bg-muted text-muted-foreground",
-  green: "bg-emerald-500/15 text-emerald-400",
-  amber: "bg-amber-400/15 text-amber-300",
-  red: "bg-rose-500/15 text-rose-400",
-  cyan: "bg-flow-cyan/15 text-flow-cyan",
+  green: "bg-emerald-600/12 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+  amber: "bg-amber-500/15 text-amber-700 dark:bg-amber-400/15 dark:text-amber-300",
+  red: "bg-rose-600/12 text-rose-700 dark:bg-rose-500/15 dark:text-rose-400",
+  cyan: "bg-teal-600/12 text-teal-700 dark:bg-flow-cyan/15 dark:text-flow-cyan",
 };
 
 export function Badge({ children, tone = "gray" }: { children: ReactNode; tone?: BadgeTone }) {
@@ -298,7 +300,7 @@ export function FiltersBar({
               key={c.key}
               type="button"
               onClick={c.onClear}
-              className="inline-flex items-center gap-1 rounded-full border border-flow-cyan/40 bg-flow-cyan/10 px-2.5 py-1 text-xs font-medium text-flow-cyan hover:bg-flow-cyan/20"
+              className="inline-flex items-center gap-1 rounded-full border border-teal-600/30 bg-teal-600/10 px-2.5 py-1 text-xs font-medium text-teal-700 hover:bg-teal-600/20 dark:border-flow-cyan/40 dark:bg-flow-cyan/10 dark:text-flow-cyan dark:hover:bg-flow-cyan/20"
             >
               <span className="max-w-[12rem] truncate">{c.label}</span> <X className="h-3 w-3" />
             </button>
