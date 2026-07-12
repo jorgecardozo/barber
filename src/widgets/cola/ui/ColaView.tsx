@@ -137,7 +137,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
       <motion.div layout className="relative overflow-hidden rounded-3xl border border-flow-cyan/25 bg-card p-6">
         <div className="mb-2 flex items-center gap-2">
           <motion.span className="h-2 w-2 rounded-full bg-flow-cyan" animate={{ opacity: atendiendo ? [1, 0.3, 1] : 0.4 }} transition={{ duration: 1.4, repeat: Infinity }} />
-          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-flow-cyan">{atendiendo ? "En el sillón" : "Sillón libre"}</span>
+          <span className="text-xs font-semibold uppercase tracking-[0.25em] text-teal-700 dark:text-flow-cyan">{atendiendo ? "En el sillón" : "Sillón libre"}</span>
         </div>
 
         <div className="flex flex-col items-center">
@@ -148,7 +148,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
                 <p className="font-display text-3xl leading-tight">{atendiendo.client}</p>
                 <p className="text-sm text-muted-foreground">{atendiendo.service}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Saldo: {atendiendo.balancePaid ? <span className="text-flow-cyan">pago</span> : <span className="text-amber-300">{formatARS(atendiendo.balanceCents)} pendiente</span>}
+                  Saldo: {atendiendo.balancePaid ? <span className="text-teal-700 dark:text-flow-cyan">pago</span> : <span className="text-amber-700 dark:text-amber-300">{formatARS(atendiendo.balanceCents)} pendiente</span>}
                 </p>
               </motion.div>
             ) : (
@@ -203,7 +203,7 @@ function SingleQueue({ barber }: { barber: BarberQueue }) {
                 <AvatarFallback>{siguiente.client[0]}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-300">Siguiente</span>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.25em] text-amber-700 dark:text-amber-300">Siguiente</span>
                 <p className="truncate font-display text-2xl leading-tight">{siguiente.client}</p>
                 <p className="truncate text-sm text-muted-foreground">{siguiente.service} · turno {siguiente.time}</p>
               </div>
@@ -343,7 +343,7 @@ function BarberChair({
       {/* Tijera haciendo snip cuando atiende */}
       {occupied && (
         <motion.div
-          className="absolute left-[47%] top-[30%] text-flow-cyan drop-shadow-[0_0_6px_var(--chart-2)]"
+          className="absolute left-[47%] top-[30%] text-teal-700 dark:text-flow-cyan drop-shadow-[0_0_6px_var(--chart-2)]"
           animate={{ rotate: [0, -26, 0], y: [0, -2, 0] }}
           transition={{ duration: 0.5, repeat: Infinity, ease: "easeInOut" }}
         >
@@ -392,7 +392,7 @@ function BarberCard({ barber, onClick }: { barber: BarberQueue; onClick: () => v
       <div className={`mb-3 rounded-xl border p-3 ${atendiendo ? "border-flow-cyan/30 bg-flow-cyan/5" : "border-border"}`}>
         <div className="flex items-center gap-1.5">
           {atendiendo && <motion.span className="h-1.5 w-1.5 rounded-full bg-flow-cyan" animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.4, repeat: Infinity }} />}
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-flow-cyan">En el sillón</span>
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-teal-700 dark:text-flow-cyan">En el sillón</span>
         </div>
         {atendiendo ? (
           <div className="mt-1 flex items-center gap-2">
@@ -410,8 +410,8 @@ function BarberCard({ barber, onClick }: { barber: BarberQueue; onClick: () => v
         )}
       </div>
       <div className="flex items-center justify-between rounded-xl border border-amber-400/20 px-3 py-2">
-        <span className="text-[10px] font-semibold uppercase tracking-widest text-amber-300">Sigue</span>
-        {siguiente ? <span className="text-sm"><span className="text-foreground">{siguiente.client}</span> · <span className="text-amber-300">{siguiente.time}</span></span> : <span className="text-sm text-muted-foreground">—</span>}
+        <span className="text-[10px] font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-300">Sigue</span>
+        {siguiente ? <span className="text-sm"><span className="text-foreground">{siguiente.client}</span> · <span className="text-amber-700 dark:text-amber-300">{siguiente.time}</span></span> : <span className="text-sm text-muted-foreground">—</span>}
       </div>
     </motion.div>
   );

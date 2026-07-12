@@ -105,7 +105,7 @@ export function HorariosEditor({
       {/* Aplicar un mismo horario a todos los días */}
       <div className="rounded-xl border border-flow-cyan/30 bg-flow-cyan/5 p-4">
         <div className="mb-3 flex items-center gap-2">
-          <CalendarClock className="h-4 w-4 text-flow-cyan" />
+          <CalendarClock className="h-4 w-4 text-teal-700 dark:text-flow-cyan" />
           <span className="text-sm font-medium text-foreground">Aplicar un horario a todos los días</span>
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -119,7 +119,7 @@ export function HorariosEditor({
             <Switch checked={incluirCerrados} onCheckedChange={setIncluirCerrados} />
             Incluir días cerrados (abre todos)
           </label>
-          <Button variant="outline" onClick={aplicarATodos} className="border-flow-cyan/40 text-flow-cyan hover:bg-flow-cyan/10 hover:text-flow-cyan">
+          <Button variant="outline" onClick={aplicarATodos} className="border-flow-cyan/40 text-teal-700 dark:text-flow-cyan hover:bg-flow-cyan/10 hover:text-teal-700 dark:text-flow-cyan">
             <Copy className="h-4 w-4" /> Aplicar a todos los días
           </Button>
         </div>
@@ -151,7 +151,7 @@ export function HorariosEditor({
           Guardar horarios
         </Button>
         {saved && !pending && (
-          <span className="flex items-center gap-1 text-sm text-flow-cyan"><Check className="h-4 w-4" /> Guardado</span>
+          <span className="flex items-center gap-1 text-sm text-teal-700 dark:text-flow-cyan"><Check className="h-4 w-4" /> Guardado</span>
         )}
       </div>
     </div>

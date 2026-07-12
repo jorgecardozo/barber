@@ -56,7 +56,7 @@ export function ServicesTable({ services, isAdmin }: { services: ServiceRow[]; i
       key: "deposit",
       label: "Seña",
       render: (s) => (
-        <span className="text-flow-cyan">
+        <span className="text-teal-700 dark:text-flow-cyan">
           {formatARS(depositForPrice(s.priceCents))}{" "}
           <span className="text-xs text-muted-foreground">({s.depositPct}%)</span>
         </span>

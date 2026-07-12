@@ -220,7 +220,7 @@ function DesktopSidebar({
             {open && (
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium text-foreground">{user.name}</p>
-                <p className="truncate text-xs text-flow-cyan">{user.role}</p>
+                <p className="truncate text-xs text-teal-700 dark:text-flow-cyan">{user.role}</p>
               </div>
             )}
           </div>
@@ -432,7 +432,7 @@ export function PanelShell({
       <MobileNav user={user} sections={sections} sucursales={sucursales} currentSucursalId={currentSucursalId} homeHref={homeHref} />
       {/* La sidebar desktop es fixed (rail w-20) → el contenido deja pl-20 y la
           versión expandida al hover se superpone sin empujar. */}
-      <div className="flex w-full flex-1 flex-col overflow-y-auto pt-14 md:pt-0 md:pl-20">
+      <div className="flex w-full flex-1 flex-col overflow-y-auto pt-14 text-foreground md:pt-0 md:pl-20">
         {children}
       </div>
     </div>
