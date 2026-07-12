@@ -118,7 +118,7 @@ export function BookingWizard({
   return (
     <section className="mx-auto max-w-3xl px-5 py-6 sm:py-12">
       <div className="mb-2 text-center">
-        <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-teal-700 dark:text-flow-cyan sm:text-xs">Reservá tu turno</p>
+        <p className="text-[10px] font-medium uppercase tracking-[0.3em] text-teal-600 dark:text-flow-cyan sm:text-xs">Reservá tu turno</p>
         <h1 className="mt-1 font-display text-2xl sm:mt-2 sm:text-4xl">
           Sacá tu <span className="chrome-text italic">turno</span>
         </h1>
@@ -138,7 +138,7 @@ export function BookingWizard({
                     current
                       ? "border-flow-red bg-flow-red text-white"
                       : done
-                        ? "border-flow-cyan/60 bg-flow-cyan/15 text-teal-700 dark:text-flow-cyan"
+                        ? "border-flow-cyan/60 bg-flow-cyan/15 text-teal-600 dark:text-flow-cyan"
                         : "border-border text-muted-foreground"
                   }`}
                 >
@@ -166,12 +166,12 @@ export function BookingWizard({
               key={s.id}
               onClick={() => chooseService(s.id)}
               className={`group rounded-2xl border p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:shadow-none ${
-                s.featured ? "border-border bg-card dark:border-flow-red/40 dark:bg-flow-red/5" : "border-border bg-card"
+                s.featured ? "border-flow-red/40 bg-card shadow-flow-red/10 dark:bg-flow-red/5" : "border-border bg-card"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-display text-xl">{s.name}</h3>
-                <span className="shrink-0 font-display text-xl text-teal-700 dark:text-flow-cyan">{formatARS(s.priceCents)}</span>
+                <span className="shrink-0 font-display text-xl text-teal-600 dark:text-flow-cyan">{formatARS(s.priceCents)}</span>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">{s.description}</p>
               <p className="mt-3 text-xs uppercase tracking-wider text-muted-foreground">
@@ -292,7 +292,7 @@ export function BookingWizard({
                 >
                   <span className="text-[11px] uppercase">{d.weekday}</span>
                   <span className="font-display text-base sm:text-lg">{d.day}</span>
-                  <span className={`mt-0.5 text-[10px] ${disabled ? "text-muted-foreground/40" : "text-teal-700 dark:text-flow-cyan"}`}>
+                  <span className={`mt-0.5 text-[10px] ${disabled ? "text-muted-foreground/40" : "text-teal-600 dark:text-flow-cyan"}`}>
                     {info === undefined ? "·" : closed ? "Cerrado" : count === 0 ? "lleno" : `${count} libres`}
                   </span>
                 </button>
@@ -327,7 +327,7 @@ export function BookingWizard({
                           className={`rounded-lg border py-2 text-sm font-medium transition-colors sm:py-2.5 ${
                             slot?.startISO === s.startISO
                               ? "border-flow-red bg-flow-red text-white"
-                              : "border-flow-cyan/30 bg-flow-cyan/10 text-teal-700 dark:text-flow-cyan hover:border-flow-cyan hover:bg-flow-cyan/20"
+                              : "border-flow-cyan/30 bg-flow-cyan/10 text-teal-600 dark:text-flow-cyan hover:border-flow-cyan hover:bg-flow-cyan/20"
                           }`}
                         >
                           {s.hhmm}
@@ -450,7 +450,7 @@ function Row({ k, v, accent, muted }: { k: string; v: string; accent?: boolean; 
   return (
     <div className="flex items-center justify-between">
       <dt className="text-muted-foreground">{k}</dt>
-      <dd className={`font-medium ${accent ? "text-teal-700 dark:text-flow-cyan" : muted ? "text-muted-foreground" : "text-foreground"}`}>{v}</dd>
+      <dd className={`font-medium ${accent ? "text-teal-600 dark:text-flow-cyan" : muted ? "text-muted-foreground" : "text-foreground"}`}>{v}</dd>
     </div>
   );
 }
