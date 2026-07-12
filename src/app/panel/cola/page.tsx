@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { ColaView } from "@/components/panel/ColaView";
+import { ColaView } from "@/widgets/cola/ui/ColaView";
 import { requireStaff } from "@/shared/api/auth";
 import { appointmentsOnDate, getBarberByUserId, getUser, listBarbers, listServices } from "@/shared/api/store";
 import { fmtTime, nowMs, todayAR } from "@/shared/lib/time";

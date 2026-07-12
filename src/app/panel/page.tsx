@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { Clock3, DollarSign, Scissors, Users } from "lucide-react";
-import { DashboardCharts } from "@/components/panel/DashboardCharts";
+import { DashboardCharts } from "@/widgets/dashboard-charts/ui/DashboardCharts";
 import { Card, CardContent } from "@/shared/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 import { Button } from "@/shared/ui/button";

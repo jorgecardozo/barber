@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { BarbersTable } from "@/components/panel/BarbersTable";
+import { BarbersTable } from "@/widgets/barberos/ui/BarbersTable";
 import { requireAdmin } from "@/shared/api/auth";
 import { listBarbers, getUser } from "@/shared/api/store";
 

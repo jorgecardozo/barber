@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { ServicesTable } from "@/components/panel/ServicesTable";
+import { ServicesTable } from "@/widgets/servicios/ui/ServicesTable";
 import { requireStaff } from "@/shared/api/auth";
 import { listServices } from "@/shared/api/store";
 

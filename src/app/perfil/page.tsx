@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { ClientShell } from "@/components/ClientShell";
-import { AvatarBuilder } from "@/components/perfil/AvatarBuilder";
+import { ClientShell } from "@/widgets/app-shell/ui/ClientShell";
+import { AvatarBuilder } from "@/features/edit-avatar/ui/AvatarBuilder";
 import { getSessionUser } from "@/shared/api/auth";
 import { parseAvatarUrl } from "@/shared/lib/avatar";
 

@@ -1,5 +1,5 @@
 import { requireStaff } from "@/shared/api/auth";
-import { PanelShell } from "@/components/panel/PanelShell";
+import { PanelShell } from "@/widgets/app-shell/ui/PanelShell";
 import { listSucursales, getCurrentSucursalId } from "@/shared/api/sucursal";
 
 // Layout del panel: sidebar (desktop) + drawer (mobile). La página de login

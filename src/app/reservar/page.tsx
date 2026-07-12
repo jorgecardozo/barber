@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { ClientShell } from "@/components/ClientShell";
-import { BookingWizard } from "@/components/reservar/BookingWizard";
+import { ClientShell } from "@/widgets/app-shell/ui/ClientShell";
+import { BookingWizard } from "@/features/book-slot/ui/BookingWizard";
 import { getSessionUser } from "@/shared/api/auth";
 import { listServices, listBarbers } from "@/shared/api/store";
 import { depositForPrice } from "@/shared/config/decisions";

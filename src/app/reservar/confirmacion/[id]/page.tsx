@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { ClientShell } from "@/components/ClientShell";
+import { ClientShell } from "@/widgets/app-shell/ui/ClientShell";
 import { getSessionUser } from "@/shared/api/auth";
 import { getAppointment, getBarber, getService } from "@/shared/api/store";
 import { DECISIONS } from "@/shared/config/decisions";

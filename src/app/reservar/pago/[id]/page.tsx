@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { ClientShell } from "@/components/ClientShell";
+import { ClientShell } from "@/widgets/app-shell/ui/ClientShell";
 import { getSessionUser } from "@/shared/api/auth";
 import { getAppointment, getBarber, getService } from "@/shared/api/store";
 import { pagarSeniaAction } from "@/shared/api/actions";

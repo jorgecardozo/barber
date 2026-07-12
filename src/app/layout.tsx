@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Anton, Inter } from "next/font/google";
 import "./globals.css";
-import { CursorGlow } from "@/components/CursorGlow";
-import { FloatingCTA } from "@/components/FloatingCTA";
+import { CursorGlow } from "@/shared/ui/CursorGlow";
+import { FloatingCTA } from "@/widgets/marketing/ui/FloatingCTA";
 import { Toaster } from "@/shared/ui/sonner";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@/shared/ui/theme-provider";
 import { cn } from "@/shared/lib/utils";
 
 const anton = Anton({

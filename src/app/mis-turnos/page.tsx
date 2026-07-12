@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { PanelShell, CLIENT_SECTIONS } from "@/components/panel/PanelShell";
-import { MisTurnosView, type MisTurnoRow } from "@/components/panel/MisTurnosView";
+import { PanelShell, CLIENT_SECTIONS } from "@/widgets/app-shell/ui/PanelShell";
+import { MisTurnosView, type MisTurnoRow } from "@/widgets/mis-turnos/ui/MisTurnosView";
 import { getSessionUser } from "@/shared/api/auth";
 import { appointmentsForCustomer, listBarbers, listServices } from "@/shared/api/store";
 import { DECISIONS } from "@/shared/config/decisions";

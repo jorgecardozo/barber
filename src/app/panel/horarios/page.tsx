@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { HorariosEditor } from "@/components/panel/HorariosEditor";
+import { HorariosEditor } from "@/widgets/horarios/ui/HorariosEditor";
 import { requireStaff } from "@/shared/api/auth";
 import { getBarber, getBarberByUserId, listBarbers, workingHoursForBarber } from "@/shared/api/store";
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { AppHeader } from "@/components/AppHeader";
+import { AppHeader } from "@/widgets/app-shell/ui/AppHeader";
 import { Button } from "@/shared/ui/button";
 import { Input } from "@/shared/ui/input";
 import { Label } from "@/shared/ui/label";

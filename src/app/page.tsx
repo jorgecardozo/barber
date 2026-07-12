@@ -1,11 +1,11 @@
-import { Nav } from "@/components/Nav";
-import { Hero } from "@/components/Hero";
-import { Services } from "@/components/Services";
-import { Barbers } from "@/components/Barbers";
-import { Fragrances } from "@/components/Fragrances";
-import { Gallery } from "@/components/Gallery";
-import { Location } from "@/components/Location";
-import { Footer } from "@/components/Footer";
+import { Nav } from "@/widgets/marketing/ui/Nav";
+import { Hero } from "@/widgets/marketing/ui/Hero";
+import { Services } from "@/widgets/marketing/ui/Services";
+import { Barbers } from "@/widgets/marketing/ui/Barbers";
+import { Fragrances } from "@/widgets/marketing/ui/Fragrances";
+import { Gallery } from "@/widgets/marketing/ui/Gallery";
+import { Location } from "@/widgets/marketing/ui/Location";
+import { Footer } from "@/widgets/marketing/ui/Footer";
 
 export default function Home() {
   return (
