@@ -133,38 +133,38 @@ body {
 
 /* Modo CLARO — misma identidad Flow (rojo/cyan) sobre superficies claras */
 :root {
-  --background: #f7f7f8;
-  --foreground: #0e0e13;
+  --background: #eceef3;
+  --foreground: #14161c;
   --card: #ffffff;
-  --card-foreground: #0e0e13;
+  --card-foreground: #14161c;
   --popover: #ffffff;
-  --popover-foreground: #0e0e13;
+  --popover-foreground: #14161c;
   --primary: #e23b3b;
   --primary-foreground: #ffffff;
-  --secondary: #ececee;
-  --secondary-foreground: #16161d;
-  --muted: #f0f0f2;
-  --muted-foreground: #6b6b73;
-  --accent: #e6e6ea;
-  --accent-foreground: #16161d;
-  --destructive: #b71717;
-  --border: rgba(7, 7, 10, 0.1);
-  --input: rgba(7, 7, 10, 0.14);
-  --ring: #0bb3c4;
+  --secondary: #e9ebf0;
+  --secondary-foreground: #2a2f3a;
+  --muted: #eaecf1;
+  --muted-foreground: #616a7a;
+  --accent: #e4e7ee;
+  --accent-foreground: #2a2f3a;
+  --destructive: #c02626;
+  --border: #dde0e8;
+  --input: #d3d7e0;
+  --ring: #0d9488;
   --chart-1: #e23b3b;
-  --chart-2: #0bb3c4;
+  --chart-2: #0d9488;
   --chart-3: #009ee3;
-  --chart-4: #f5b301;
-  --chart-5: #9a9aa3;
+  --chart-4: #d97706;
+  --chart-5: #94a3b8;
   --radius: 0.625rem;
   --sidebar: #ffffff;
-  --sidebar-foreground: #0e0e13;
+  --sidebar-foreground: #14161c;
   --sidebar-primary: #e23b3b;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ececee;
-  --sidebar-accent-foreground: #16161d;
-  --sidebar-border: rgba(7, 7, 10, 0.1);
-  --sidebar-ring: #0bb3c4;
+  --sidebar-accent: #eef0f4;
+  --sidebar-accent-foreground: #2a2f3a;
+  --sidebar-border: #e5e8ee;
+  --sidebar-ring: #0d9488;
 }
 
 /* Tokens de shadcn mapeados a la identidad de Flow (modo oscuro forzado) */

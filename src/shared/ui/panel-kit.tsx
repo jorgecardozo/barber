@@ -19,7 +19,7 @@ import {
 // ---------- Panel (card contenedora, como kampo) ----------
 export function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn("rounded-2xl border border-border bg-card", className)}>{children}</div>
+    <div className={cn("rounded-2xl border border-border bg-card shadow-sm dark:shadow-none", className)}>{children}</div>
   );
 }
 
@@ -205,7 +205,7 @@ export function FilterField({ label, children }: { label: string; children: Reac
 }
 
 const dateInputClass =
-  "rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary [color-scheme:dark]";
+  "rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary [color-scheme:light] dark:[color-scheme:dark]";
 
 export function DateRangeInputs({
   from,

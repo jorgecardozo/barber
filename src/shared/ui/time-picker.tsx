@@ -65,7 +65,7 @@ export function TimePicker({
             step={60}
             value={value || ""}
             onChange={(e) => onChange(e.target.value)}
-            className="mb-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary [color-scheme:dark]"
+            className="mb-1 w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary [color-scheme:light] dark:[color-scheme:dark]"
           />
           {/* Atajos cada 15 min. */}
           <div className="max-h-52 overflow-y-auto">

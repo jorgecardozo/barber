@@ -165,8 +165,8 @@ export function BookingWizard({
             <button
               key={s.id}
               onClick={() => chooseService(s.id)}
-              className={`group rounded-2xl border p-5 text-left transition-all hover:-translate-y-0.5 ${
-                s.featured ? "border-flow-red/40 bg-flow-red/5" : "border-border bg-card hover:border-border"
+              className={`group rounded-2xl border p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:shadow-none ${
+                s.featured ? "border-flow-red/40 bg-flow-red/5" : "border-border bg-card"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
