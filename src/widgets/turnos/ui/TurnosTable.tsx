@@ -10,7 +10,9 @@ import { Button } from "@/shared/ui/button";
 import { DatePicker } from "@/shared/ui/date-picker";
 import { DataTable, ColumnsToggle, useColumnVisibility, type Column } from "@/widgets/data-table/ui/DataTable";
 import { PageHeader } from "@/widgets/page-header/ui/PageHeader";
-import { Badge, FiltersBar, FilterField, FilterSelect, Pagination, InfiniteFooter, Panel, ModeToggle, type BadgeTone, type ListMode } from "@/widgets/data-table/ui/toolbar";
+import { Badge, FiltersBar, FilterField, FilterSelect, Pagination, InfiniteFooter, Panel, ModeToggle, type ListMode } from "@/shared/ui/panel-kit";
+import { METODO, ESTADOS, STATUS_TONE, statusLabel, type TurnoRow } from "@/entities/appointment/model/turno";
+import { PayHint } from "@/entities/appointment/ui/PayHint";
 import { TurnoDetailDrawer } from "@/features/edit-turno/ui/TurnoDetailDrawer";
 import {
   DropdownMenu,
@@ -28,47 +30,6 @@ import {
 } from "@/shared/api/actions";
 import type { AppointmentStatus } from "@/shared/model/types";
 
-export type TurnoRow = {
-  id: string;
-  startMs: number;
-  dateValue: string;
-  dateLabel: string;
-  time: string;
-  customerName: string;
-  customerPhone: string;
-  notes: string;
-  barberId: string;
-  barberName: string;
-  serviceId: string;
-  serviceName: string;
-  priceCents: number;
-  depositCents: number;
-  balanceCents: number;
-  depositMethod: string | null;
-  depositStatus: "pendiente" | "pagado";
-  balanceMethod: string | null;
-  balanceStatus: "pendiente" | "pagado";
-  status: AppointmentStatus;
-};
-
-export const METODO: Record<string, string> = { mercadopago: "MercadoPago", efectivo: "Efectivo" };
-export const ESTADOS: { v: AppointmentStatus; l: string }[] = [
-  { v: "confirmada", l: "Confirmado" },
-  { v: "en_curso", l: "En el sillón" },
-  { v: "completada", l: "Completado" },
-  { v: "no_show", l: "Ausente" },
-  { v: "cancelada", l: "Cancelado" },
-];
-
-export const STATUS_TONE: Record<AppointmentStatus, BadgeTone> = {
-  hold: "amber",
-  confirmada: "cyan",
-  en_curso: "cyan",
-  completada: "green",
-  no_show: "amber",
-  cancelada: "red",
-  expirada: "gray",
-};
 
 export function TurnosTable({
   rows,
@@ -307,17 +268,6 @@ export function TurnosTable({
   );
 }
 
-export function statusLabel(s: AppointmentStatus): string {
-  return ESTADOS.find((e) => e.v === s)?.l ?? s;
-}
-
-export function PayHint({ status, method }: { status: "pendiente" | "pagado"; method: string | null }) {
-  return (
-    <span className={`block text-[11px] ${status === "pagado" ? "text-flow-cyan" : "text-amber-300/80"}`}>
-      {status === "pagado" ? `✓ ${method ? METODO[method] : ""}` : `pendiente${method ? " · " + METODO[method] : ""}`}
-    </span>
-  );
-}
 
 function RowActions({
   row,

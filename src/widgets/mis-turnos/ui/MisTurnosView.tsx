@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { DataTable, type Column } from "@/widgets/data-table/ui/DataTable";
 import { PageHeader } from "@/widgets/page-header/ui/PageHeader";
-import { Panel, Badge } from "@/widgets/data-table/ui/toolbar";
-import { STATUS_TONE, statusLabel } from "@/widgets/turnos/ui/TurnosTable";
+import { Panel, Badge } from "@/shared/ui/panel-kit";
+import { STATUS_TONE, statusLabel } from "@/entities/appointment/model/turno";
 import { cancelarTurnoAction } from "@/shared/api/actions";
 import { formatARS } from "@/shared/lib/money";
 import type { AppointmentStatus } from "@/shared/model/types";

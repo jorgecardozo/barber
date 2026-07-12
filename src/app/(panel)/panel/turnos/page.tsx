@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
-import { TurnosTable, type TurnoRow } from "@/widgets/turnos/ui/TurnosTable";
+import { TurnosTable } from "@/widgets/turnos/ui/TurnosTable";
+import type { TurnoRow } from "@/entities/appointment/model/turno";
 import { WalkInDialog } from "@/features/new-turno/ui/WalkInDialog";
 import { requireStaff } from "@/shared/api/auth";
 import { expireHolds, listAllAppointments, listBarbers, listServices } from "@/shared/api/store";

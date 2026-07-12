@@ -7,7 +7,7 @@ import { Drawer, Field, inputClass } from "@/shared/ui/Drawer";
 import { BarberActiveToggle } from "@/features/manage-barber/ui/BarberActiveToggle";
 import { Switch } from "@/shared/ui/switch";
 import { createBarberAction, updateBarberAction } from "@/shared/api/admin-actions";
-import type { BarberRow } from "@/widgets/barberos/ui/BarbersTable";
+import type { BarberRow } from "@/entities/barber/model/row";
 
 type Props = {
   open: boolean;

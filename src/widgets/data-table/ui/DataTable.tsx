@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/shared/ui/dropdown-menu";
-import { EmptyState } from "@/widgets/data-table/ui/toolbar";
+import { EmptyState } from "@/shared/ui/panel-kit";
 
 export type Column<T> = {
   key: string;

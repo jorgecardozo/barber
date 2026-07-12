@@ -6,17 +6,9 @@ import { DataTable, ColumnsToggle, useColumnVisibility, type Column } from "@/wi
 import { PageHeader } from "@/widgets/page-header/ui/PageHeader";
 import { BarberFormDrawer } from "@/features/manage-barber/ui/BarberFormDrawer";
 import { BarberActiveToggle } from "@/features/manage-barber/ui/BarberActiveToggle";
-import { FiltersBar, PrimaryButton, Pagination, InfiniteFooter, Badge, Panel, ModeToggle, type ListMode } from "@/widgets/data-table/ui/toolbar";
+import { FiltersBar, PrimaryButton, Pagination, InfiniteFooter, Badge, Panel, ModeToggle, type ListMode } from "@/shared/ui/panel-kit";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
-
-export type BarberRow = {
-  id: string;
-  name: string;
-  specialty: string;
-  active: boolean;
-  img?: string;
-  email?: string;
-};
+import type { BarberRow } from "@/entities/barber/model/row";
 
 const PAGE_SIZE = 12;
 

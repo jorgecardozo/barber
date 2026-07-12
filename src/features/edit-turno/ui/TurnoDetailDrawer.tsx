@@ -10,8 +10,9 @@ import { DatePicker } from "@/shared/ui/date-picker";
 import { TimePicker } from "@/shared/ui/time-picker";
 import { Button } from "@/shared/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/shared/ui/popover";
-import { Badge } from "@/widgets/data-table/ui/toolbar";
-import { METODO, ESTADOS, STATUS_TONE, statusLabel, PayHint, type TurnoRow } from "@/widgets/turnos/ui/TurnosTable";
+import { Badge } from "@/shared/ui/panel-kit";
+import { METODO, ESTADOS, STATUS_TONE, statusLabel, type TurnoRow } from "@/entities/appointment/model/turno";
+import { PayHint } from "@/entities/appointment/ui/PayHint";
 import type { AppointmentStatus } from "@/shared/model/types";
 
 // Selector de estado con badges de color (el <select> nativo no colorea las

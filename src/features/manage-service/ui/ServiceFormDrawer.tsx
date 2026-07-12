@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 import { Drawer, Field, inputClass } from "@/shared/ui/Drawer";
 import { createServiceAction, updateServiceAction, deleteServiceAction } from "@/shared/api/admin-actions";
-import type { ServiceRow } from "@/widgets/servicios/ui/ServicesTable";
+import type { ServiceRow } from "@/entities/service/model/row";
 
 type Props = {
   open: boolean;

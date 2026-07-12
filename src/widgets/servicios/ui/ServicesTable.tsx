@@ -4,18 +4,10 @@ import { useMemo, useState } from "react";
 import { DataTable, ColumnsToggle, useColumnVisibility, type Column } from "@/widgets/data-table/ui/DataTable";
 import { PageHeader } from "@/widgets/page-header/ui/PageHeader";
 import { ServiceFormDrawer } from "@/features/manage-service/ui/ServiceFormDrawer";
-import { FiltersBar, PrimaryButton, Pagination, InfiniteFooter, Panel, ModeToggle, type ListMode } from "@/widgets/data-table/ui/toolbar";
+import { FiltersBar, PrimaryButton, Pagination, InfiniteFooter, Panel, ModeToggle, type ListMode } from "@/shared/ui/panel-kit";
 import { depositForPrice } from "@/shared/config/decisions";
 import { formatARS } from "@/shared/lib/money";
-
-export type ServiceRow = {
-  id: string;
-  name: string;
-  description: string;
-  priceCents: number;
-  durationMin: number;
-  depositPct: number;
-};
+import type { ServiceRow } from "@/entities/service/model/row";
 
 const PAGE_SIZE = 12;
 
