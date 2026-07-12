@@ -133,7 +133,7 @@ body {
 
 /* Modo CLARO — misma identidad Flow (rojo/cyan) sobre superficies claras */
 :root {
-  --background: #eceef3;
+  --background: #f8f9fb;
   --foreground: #14161c;
   --card: #ffffff;
   --card-foreground: #14161c;
